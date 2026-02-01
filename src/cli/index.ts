@@ -41,6 +41,16 @@ import {
     trackCommand
 } from '../core/index.js';
 import { homedir } from 'os';
+import { registerRemoveCommand } from './commands/remove.js';
+import { fzfSearch, searchSkillsAPI } from './fzf-search.js';
+import {
+    addSkillToLock,
+    createLockEntry,
+    getCanonicalPath,
+    getCanonicalSkillsDir,
+    installSkillWithSymlinks,
+    type LockEntry
+} from '../core/index.js';
 
 // Centralized agent configuration with project and global paths
 const home = homedir();
@@ -228,6 +238,85 @@ const AGENTS: Record<string, AgentConfig> = {
         projectDir: '.neovate/skills',
         globalDir: `${home}/.neovate/skills`,
     },
+    // Additional agents from Vercel Skills (13 more = 42 total)
+    'ara': {
+        name: 'ara',
+        displayName: 'Ara',
+        projectDir: '.ara/skills',
+        globalDir: `${home}/.ara/skills`,
+    },
+    'aide': {
+        name: 'aide',
+        displayName: 'Aide',
+        projectDir: '.aide/skills',
+        globalDir: `${home}/.aide/skills`,
+    },
+    'alex': {
+        name: 'alex',
+        displayName: 'Alex',
+        projectDir: '.alex/skills',
+        globalDir: `${home}/.alex/skills`,
+    },
+    'bb': {
+        name: 'bb',
+        displayName: 'BB',
+        projectDir: '.bb/skills',
+        globalDir: `${home}/.bb/skills`,
+    },
+    'codestory': {
+        name: 'codestory',
+        displayName: 'CodeStory',
+        projectDir: '.codestory/skills',
+        globalDir: `${home}/.codestory/skills`,
+    },
+    'helix-ai': {
+        name: 'helix-ai',
+        displayName: 'Helix AI',
+        projectDir: '.helix/skills',
+        globalDir: `${home}/.helix/skills`,
+    },
+    'meekia': {
+        name: 'meekia',
+        displayName: 'Meekia',
+        projectDir: '.meekia/skills',
+        globalDir: `${home}/.meekia/skills`,
+    },
+    'pear-ai': {
+        name: 'pear-ai',
+        displayName: 'Pear AI',
+        projectDir: '.pearai/skills',
+        globalDir: `${home}/.pearai/skills`,
+    },
+    'adal': {
+        name: 'adal',
+        displayName: 'Adal',
+        projectDir: '.adal/skills',
+        globalDir: `${home}/.adal/skills`,
+    },
+    'pochi': {
+        name: 'pochi',
+        displayName: 'Pochi',
+        projectDir: '.pochi/skills',
+        globalDir: `${home}/.pochi/skills`,
+    },
+    'sourcegraph-cody': {
+        name: 'sourcegraph-cody',
+        displayName: 'Sourcegraph Cody',
+        projectDir: '.sourcegraph/skills',
+        globalDir: `${home}/.sourcegraph/skills`,
+    },
+    'void-ai': {
+        name: 'void-ai',
+        displayName: 'Void AI',
+        projectDir: '.void/skills',
+        globalDir: `${home}/.void/skills`,
+    },
+    'zed': {
+        name: 'zed',
+        displayName: 'Zed',
+        projectDir: '.zed/skills',
+        globalDir: `${home}/.zed/skills`,
+    },
 };
 
 // Helper to get install path
@@ -240,7 +329,7 @@ function getInstallPath(agent: string, global: boolean): string {
 const program = new Command();
 
 // Initialize telemetry with CLI version
-setVersion('1.0.23');
+setVersion('1.0.8');
 
 // Main flow when running `skills` - go straight to install
 async function showMainMenu() {
@@ -1087,15 +1176,52 @@ program
 // ============================================
 
 program
-    .command('search <query...>')
+    .command('search [query...]')
     .alias('s')
     .description('Search and install skills from marketplace (67K+ skills)')
     .option('-l, --limit <n>', 'Maximum results to show', '20')
     .option('-s, --sort <by>', 'Sort by: stars, recent, name', 'stars')
+    .option('-i, --interactive', 'Launch interactive FZF-style search')
     .option('--json', 'Output as JSON for scripting (no interactive prompt)')
     .action(async (queryParts, options) => {
         try {
+            // Interactive FZF mode
+            if (options.interactive || (queryParts.length === 0 && !options.json)) {
+                const selected = await fzfSearch(queryParts.join(' '));
+                if (selected) {
+                    console.log(chalk.bold(`\n📦 Selected: ${selected.name}\n`));
+                    console.log(chalk.gray(`Scoped name: ${selected.scopedName}`));
+                    console.log(chalk.gray(`Author: ${selected.author}`));
+                    console.log(chalk.gray(`Stars: ${selected.stars.toLocaleString()}`));
+                    if (selected.description) {
+                        console.log(chalk.gray(`Description: ${selected.description}`));
+                    }
+                    console.log('');
+
+                    // Ask if user wants to install
+                    const { install } = await inquirer.prompt([{
+                        type: 'confirm',
+                        name: 'install',
+                        message: `Install ${selected.name}?`,
+                        default: true
+                    }]);
+
+                    if (install) {
+                        const { execSync } = await import('child_process');
+                        execSync(`"${process.argv[0]}" "${process.argv[1]}" install "${selected.scopedName}"`, { stdio: 'inherit' });
+                    }
+                } else {
+                    console.log(chalk.yellow('\nSearch cancelled.\n'));
+                }
+                return;
+            }
+
             const query = queryParts.join(' ');
+            if (!query) {
+                console.log(chalk.yellow('Please provide a search query or use -i for interactive mode.'));
+                return;
+            }
+
             const limit = parseInt(options.limit) || 20;
 
             if (!options.json) {
@@ -1461,28 +1587,19 @@ program
                 await rm(tempDir, { recursive: true, force: true }).catch(() => { });
             }
 
-            // Track installation
-            const trackingFile = join(homedir(), '.antigravity', 'installed.json');
-            const trackingDir = join(homedir(), '.antigravity');
-            await mkdir(trackingDir, { recursive: true });
-
-            let installed: any[] = [];
-            try {
-                const { readFile } = await import('fs/promises');
-                const content = await readFile(trackingFile, 'utf-8');
-                installed = JSON.parse(content);
-            } catch { }
-
-            installed.push({
+            // Track installation in lock file
+            const canonicalPath = getCanonicalPath(skill.name, { global: isGlobal, cwd: process.cwd() });
+            const lockEntry = createLockEntry({
                 name: skill.name,
-                author: skill.author,
                 scopedName: `@${skill.author}/${skill.name}`,
-                platforms,
-                githubUrl,
-                installedAt: new Date().toISOString()
+                source: githubUrl,
+                sourceType: 'database',
+                agents: platforms,
+                canonicalPath,
+                isGlobal,
+                projectDir: isGlobal ? undefined : process.cwd()
             });
-
-            await writeFile(trackingFile, JSON.stringify(installed, null, 2));
+            await addSkillToLock(lockEntry);
 
             console.log(chalk.bold.green(`\n✨ Successfully installed: ${skill.name}`));
             console.log(chalk.gray(`   Scoped name: @${skill.author}/${skill.name}`));
@@ -1497,7 +1614,7 @@ program
 // Add - Install skills directly from Git repository URLs
 program
     .command('add <source>')
-    .description('Install skills from a Git repo (e.g., owner/repo, https://github.com/owner/repo)')
+    .description('Install skills from a Git repo (e.g., owner/repo, owner/repo@skill-name)')
     .option('-g, --global', 'Install skill globally (user-level) instead of project-level')
     .option('-l, --list', 'List available skills in the repository without installing')
     .option('-s, --skill <skills...>', 'Specify skill names to install')
@@ -1513,13 +1630,21 @@ program
             const { promisify } = await import('util');
             const execAsync = promisify(exec);
 
-            // Parse source URL
-            function parseSource(input: string): { type: string; url: string; subpath?: string } {
+            // Parse source URL with @skill-name support
+            function parseSource(input: string): { type: string; url: string; subpath?: string; targetSkill?: string } {
+                // Check for @skill-name suffix: owner/repo@skill-name
+                let targetSkill: string | undefined;
+                const atMatch = input.match(/^(.+)@([a-zA-Z0-9_-]+)$/);
+                if (atMatch && !input.includes('github.com') && !input.includes('gitlab.com')) {
+                    input = atMatch[1];
+                    targetSkill = atMatch[2];
+                }
+
                 // GitHub URL with path: github.com/owner/repo/tree/branch/path
                 const githubTreeMatch = input.match(/github\.com\/([^/]+)\/([^/]+)\/tree\/([^/]+)\/(.+)/);
                 if (githubTreeMatch) {
                     const [, owner, repo, , subpath] = githubTreeMatch;
-                    return { type: 'github', url: `https://github.com/${owner}/${repo}.git`, subpath };
+                    return { type: 'github', url: `https://github.com/${owner}/${repo}.git`, subpath, targetSkill };
                 }
 
                 // GitHub URL: github.com/owner/repo
@@ -1527,7 +1652,7 @@ program
                 if (githubRepoMatch) {
                     const [, owner, repo] = githubRepoMatch;
                     const cleanRepo = repo!.replace(/\.git$/, '');
-                    return { type: 'github', url: `https://github.com/${owner}/${cleanRepo}.git` };
+                    return { type: 'github', url: `https://github.com/${owner}/${cleanRepo}.git`, targetSkill };
                 }
 
                 // GitLab URL: gitlab.com/owner/repo
@@ -1535,18 +1660,18 @@ program
                 if (gitlabMatch) {
                     const [, owner, repo] = gitlabMatch;
                     const cleanRepo = repo!.replace(/\.git$/, '');
-                    return { type: 'gitlab', url: `https://gitlab.com/${owner}/${cleanRepo}.git` };
+                    return { type: 'gitlab', url: `https://gitlab.com/${owner}/${cleanRepo}.git`, targetSkill };
                 }
 
                 // GitHub shorthand: owner/repo or owner/repo/path
                 const shorthandMatch = input.match(/^([^/]+)\/([^/]+)(?:\/(.+))?$/);
                 if (shorthandMatch && !input.includes(':')) {
                     const [, owner, repo, subpath] = shorthandMatch;
-                    return { type: 'github', url: `https://github.com/${owner}/${repo}.git`, subpath };
+                    return { type: 'github', url: `https://github.com/${owner}/${repo}.git`, subpath, targetSkill };
                 }
 
                 // Fallback: treat as direct git URL
-                return { type: 'git', url: input };
+                return { type: 'git', url: input, targetSkill };
             }
 
             // Discover skills in a directory
@@ -1641,7 +1766,23 @@ program
 
             // Select skills to install
             let selectedSkills = skills;
-            if (options.skill && options.skill.length > 0) {
+
+            // If @skill-name was specified in the source URL, auto-select that skill
+            if (parsed.targetSkill) {
+                selectedSkills = skills.filter(s =>
+                    s.name.toLowerCase() === parsed.targetSkill!.toLowerCase()
+                );
+                if (selectedSkills.length === 0) {
+                    console.log(chalk.yellow(`Skill "${parsed.targetSkill}" not found in repository.`));
+                    console.log(chalk.gray('Available skills:'));
+                    for (const skill of skills) {
+                        console.log(chalk.cyan(`  ${skill.name}`));
+                    }
+                    await rm(tempDir, { recursive: true, force: true }).catch(() => { });
+                    return;
+                }
+                console.log(chalk.gray(`Auto-selected: ${parsed.targetSkill}`));
+            } else if (options.skill && options.skill.length > 0) {
                 selectedSkills = skills.filter(s =>
                     options.skill.some((name: string) => s.name.toLowerCase() === name.toLowerCase())
                 );
@@ -1712,6 +1853,20 @@ program
                     console.log(chalk.green(`✔ ${skill.name} → ${agentConfig.displayName}`));
                     console.log(chalk.gray(`  ${isGlobal ? skillDir : targetDir + '/' + skill.name}`));
                 }
+
+                // Track in lock file
+                const canonicalPath = getCanonicalPath(skill.name, { global: isGlobal, cwd: process.cwd() });
+                const lockEntry = createLockEntry({
+                    name: skill.name,
+                    scopedName: skill.name, // From repo, no author info
+                    source: parsed.url,
+                    sourceType: parsed.type === 'github' ? 'github' : parsed.type === 'gitlab' ? 'gitlab' : 'local',
+                    agents: targetAgents,
+                    canonicalPath,
+                    isGlobal,
+                    projectDir: isGlobal ? undefined : process.cwd()
+                });
+                await addSkillToLock(lockEntry);
             }
 
             console.log(chalk.bold.green(`\n✨ Successfully installed ${selectedSkills.length} skill(s)\n`));
@@ -2753,79 +2908,7 @@ program
         }
     });
 
-// Update - Check and update installed skills
-program
-    .command('update [skill-name]')
-    .description('Update installed skills to latest versions')
-    .option('--all', 'Update all installed skills')
-    .option('--check', 'Only check for updates, don\'t install')
-    .action(async (skillName, options) => {
-        try {
-            const { homedir } = await import('os');
-            const { join } = await import('path');
-            const { existsSync } = await import('fs');
-            const { readdir, readFile } = await import('fs/promises');
-
-            const skillsDir = join(homedir(), '.antigravity', 'skills');
-
-            if (!existsSync(skillsDir)) {
-                console.log(chalk.yellow('No skills installed.'));
-                return;
-            }
-
-            const entries = await readdir(skillsDir, { withFileTypes: true });
-            const installedSkills = entries.filter(e => e.isDirectory()).map(e => e.name);
-
-            if (installedSkills.length === 0) {
-                console.log(chalk.yellow('No skills installed.'));
-                return;
-            }
-
-            // Filter to specific skill if provided
-            const toUpdate = skillName
-                ? installedSkills.filter(s => s.toLowerCase().includes(skillName.toLowerCase()))
-                : installedSkills;
-
-            if (toUpdate.length === 0) {
-                console.log(chalk.yellow(`No matching skills found for: ${skillName}`));
-                return;
-            }
-
-            console.log(chalk.bold(`\n🔄 Checking ${toUpdate.length} skill(s) for updates...\n`));
-
-            let updatesAvailable = 0;
-
-            for (const skill of toUpdate) {
-                const skillPath = join(skillsDir, skill);
-                const skillMdPath = join(skillPath, 'SKILL.md');
-
-                if (!existsSync(skillMdPath)) {
-                    console.log(chalk.gray(`  ○ ${skill} - No SKILL.md found`));
-                    continue;
-                }
-
-                // Read current skill to check version/hash
-                const content = await readFile(skillMdPath, 'utf-8');
-                const lines = content.split('\n').slice(0, 10).join('\n');
-
-                // For now, just show as "up to date" - full version checking would need manifest
-                if (options.check) {
-                    console.log(chalk.green(`  ✓ ${skill}`) + chalk.gray(' - up to date'));
-                } else {
-                    console.log(chalk.green(`  ✓ ${skill}`) + chalk.gray(' - already latest'));
-                }
-            }
-
-            if (updatesAvailable === 0) {
-                console.log(chalk.green('\n✓ All skills are up to date!\n'));
-            } else {
-                console.log(chalk.cyan(`\n${updatesAvailable} update(s) available.\n`));
-            }
-        } catch (error) {
-            console.error(chalk.red('Error checking updates:'), error);
-            process.exit(1);
-        }
-    });
+// (Old update command removed - see new lock file-based update command below)
 
 // Doctor - Diagnose and fix common issues
 program
@@ -2970,83 +3053,232 @@ program
 
 program
     .command('check')
-    .description('Check for available skill updates')
+    .description('Check installed skills and available updates')
     .option('-a, --agent <agent>', 'Check specific agent only')
-    .option('-g, --global', 'Check globally installed skills')
+    .option('-g, --global', 'Check globally installed skills only')
     .option('--json', 'Output as JSON')
     .action(async (options) => {
         try {
-            const spinner = ora('Checking for updates...').start();
+            const { listInstalledSkills, readLock } = await import('../core/index.js');
 
-            // Get list of agents to check
-            const agentsToCheck = options.agent
-                ? [options.agent]
-                : Object.keys(AGENTS);
+            const spinner = ora('Checking installed skills...').start();
 
-            const updates: Array<{
-                skill: string;
-                agent: string;
-                currentVersion: string;
-                latestVersion: string;
-                path: string;
-            }> = [];
+            // Read from lock file
+            const lock = await readLock();
+            let skills = Object.values(lock.skills);
 
-            for (const agentName of agentsToCheck) {
-                const config = AGENTS[agentName];
-                if (!config) continue;
+            // Filter by global/project
+            if (options.global) {
+                skills = skills.filter(s => s.isGlobal);
+            } else if (!options.global && !options.agent) {
+                // Show all (both global and project)
+            }
 
-                const skillsDir = options.global ? config.globalDir : config.projectDir;
-
-                try {
-                    const { existsSync, readdirSync } = await import('fs');
-                    if (!existsSync(skillsDir)) continue;
-
-                    const skills = readdirSync(skillsDir, { withFileTypes: true })
-                        .filter(d => d.isDirectory())
-                        .map(d => d.name);
-
-                    for (const skill of skills) {
-                        // Check if skill has updates available
-                        // For now, just list installed skills
-                        updates.push({
-                            skill,
-                            agent: config.displayName,
-                            currentVersion: 'installed',
-                            latestVersion: 'check online',
-                            path: `${skillsDir}/${skill}`,
-                        });
-                    }
-                } catch {
-                    // Skip if can't read directory
-                }
+            // Filter by agent
+            if (options.agent) {
+                skills = skills.filter(s => s.agents.includes(options.agent));
             }
 
             spinner.stop();
 
             if (options.json) {
-                console.log(JSON.stringify({ updates, count: updates.length }, null, 2));
+                console.log(JSON.stringify({ skills, count: skills.length }, null, 2));
                 return;
             }
 
-            if (updates.length === 0) {
-                console.log(chalk.green('✓ No skills installed to check.'));
+            if (skills.length === 0) {
+                console.log(chalk.yellow('\n📦 No skills installed.'));
+                console.log(chalk.gray('Use `skills search` or `skills install` to add skills.\n'));
                 return;
             }
 
-            console.log(chalk.bold(`\n📦 Found ${updates.length} installed skill(s):\n`));
+            console.log(chalk.bold(`\n📦 Found ${skills.length} installed skill(s):\n`));
 
-            for (const update of updates) {
-                console.log(`  ${chalk.cyan(update.skill)} ${chalk.gray(`(${update.agent})`)}`);
-                console.log(chalk.gray(`    ${update.path}`));
+            for (const skill of skills) {
+                const sourceLabel = skill.sourceType === 'database' ? '🌐 Database' :
+                    skill.sourceType === 'github' ? '🐙 GitHub' :
+                        skill.sourceType === 'gitlab' ? '🦊 GitLab' : '📁 Local';
+
+                console.log(`  ${chalk.cyan(skill.scopedName)} ${chalk.gray(`[${sourceLabel}]`)}`);
+                console.log(chalk.gray(`    Agents: ${skill.agents.join(', ')}`));
+                console.log(chalk.gray(`    Installed: ${new Date(skill.installedAt).toLocaleDateString()}`));
+                if (skill.version) {
+                    console.log(chalk.gray(`    Version: ${skill.version.slice(0, 7)}`));
+                }
+                console.log('');
             }
 
-            console.log(chalk.gray('\nTip: Run `skills update` to update all skills.\n'));
+            console.log(chalk.gray('Tip: Run `skills update` to update all skills.'));
+            console.log(chalk.gray('     Run `skills remove` to uninstall skills.\n'));
 
         } catch (error) {
-            console.error(chalk.red('Error checking for updates:'), error);
+            console.error(chalk.red('Error checking installed skills:'), error);
             process.exit(1);
         }
     });
+
+// Update - Re-download skills from their sources
+program
+    .command('update [skill-names...]')
+    .description('Update installed skills from their sources')
+    .option('-a, --all', 'Update all installed skills')
+    .option('-g, --global', 'Only update globally installed skills')
+    .option('-y, --yes', 'Skip confirmation prompts')
+    .action(async (skillNames, options) => {
+        try {
+            const { readLock, removeSkillFromLock, addSkillToLock, createLockEntry } = await import('../core/index.js');
+            const { mkdir, cp, rm } = await import('fs/promises');
+            const { existsSync } = await import('fs');
+            const { join } = await import('path');
+            const { tmpdir } = await import('os');
+            const { exec } = await import('child_process');
+            const { promisify } = await import('util');
+            const execAsync = promisify(exec);
+
+            const lock = await readLock();
+            let skillsToUpdate = Object.values(lock.skills);
+
+            // Filter by global
+            if (options.global) {
+                skillsToUpdate = skillsToUpdate.filter(s => s.isGlobal);
+            }
+
+            // Filter by specific names
+            if (skillNames && skillNames.length > 0) {
+                skillsToUpdate = skillsToUpdate.filter(s =>
+                    skillNames.some((n: string) =>
+                        s.name.toLowerCase() === n.toLowerCase() ||
+                        s.scopedName.toLowerCase() === n.toLowerCase()
+                    )
+                );
+            }
+
+            // If not --all and no specific skills, prompt for selection
+            if (!options.all && skillNames.length === 0 && skillsToUpdate.length > 0) {
+                const { selected } = await inquirer.prompt([{
+                    type: 'checkbox',
+                    name: 'selected',
+                    message: 'Select skills to update:',
+                    choices: skillsToUpdate.map(s => ({
+                        name: `${s.scopedName} (${s.sourceType})`,
+                        value: s,
+                        checked: true
+                    }))
+                }]);
+                skillsToUpdate = selected;
+            }
+
+            if (skillsToUpdate.length === 0) {
+                console.log(chalk.yellow('\n📦 No skills to update.'));
+                console.log(chalk.gray('Use `skills install` to add skills first.\n'));
+                return;
+            }
+
+            // Filter to only updateable skills (github/gitlab)
+            const updateable = skillsToUpdate.filter(s =>
+                s.sourceType === 'github' || s.sourceType === 'gitlab' || s.sourceType === 'database'
+            );
+
+            if (updateable.length === 0) {
+                console.log(chalk.yellow('\n📦 No remote skills to update.'));
+                console.log(chalk.gray('Local skills cannot be updated automatically.\n'));
+                return;
+            }
+
+            console.log(chalk.bold(`\n📦 Updating ${updateable.length} skill(s)...\n`));
+
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const skill of updateable) {
+                const spinner = ora(`Updating ${skill.scopedName}...`).start();
+
+                try {
+                    // Clone to temp directory
+                    const tempDir = join(tmpdir(), `skill-update-${Date.now()}`);
+                    await mkdir(tempDir, { recursive: true });
+
+                    // Parse GitHub/GitLab URL
+                    const urlMatch = skill.source.match(/(github|gitlab)\.com\/([^/]+)\/([^/]+)/);
+                    if (!urlMatch) {
+                        spinner.fail(`${skill.scopedName}: Invalid source URL`);
+                        failCount++;
+                        continue;
+                    }
+
+                    // Clone the repo
+                    await execAsync(`git clone --depth 1 ${skill.source} .`, { cwd: tempDir });
+
+                    // Update each agent directory
+                    for (const agent of skill.agents) {
+                        const agentConfig = AGENTS[agent];
+                        if (!agentConfig) continue;
+
+                        const targetDir = skill.isGlobal ? agentConfig.globalDir : agentConfig.projectDir;
+                        const skillDir = skill.isGlobal
+                            ? join(targetDir, skill.name)
+                            : join(skill.projectDir || process.cwd(), targetDir, skill.name);
+
+                        // Remove old version
+                        if (existsSync(skillDir)) {
+                            await rm(skillDir, { recursive: true, force: true });
+                        }
+
+                        // Copy new version
+                        await mkdir(skillDir, { recursive: true });
+                        await cp(tempDir, skillDir, { recursive: true });
+                    }
+
+                    // Get latest commit SHA for version tracking
+                    let version: string | undefined;
+                    try {
+                        const { stdout } = await execAsync('git rev-parse HEAD', { cwd: tempDir });
+                        version = stdout.trim();
+                    } catch { }
+
+                    // Update lock file
+                    await removeSkillFromLock(skill.scopedName);
+                    const updatedEntry = createLockEntry({
+                        name: skill.name,
+                        scopedName: skill.scopedName,
+                        source: skill.source,
+                        sourceType: skill.sourceType,
+                        version,
+                        agents: skill.agents,
+                        canonicalPath: skill.canonicalPath,
+                        isGlobal: skill.isGlobal,
+                        projectDir: skill.projectDir
+                    });
+                    await addSkillToLock(updatedEntry);
+
+                    // Cleanup
+                    await rm(tempDir, { recursive: true, force: true }).catch(() => { });
+
+                    spinner.succeed(`${skill.scopedName}: Updated successfully`);
+                    successCount++;
+                } catch (err: any) {
+                    spinner.fail(`${skill.scopedName}: ${err.message || err}`);
+                    failCount++;
+                }
+            }
+
+            console.log('');
+            if (successCount > 0) {
+                console.log(chalk.bold.green(`✨ Updated ${successCount} skill(s)`));
+            }
+            if (failCount > 0) {
+                console.log(chalk.yellow(`⚠ ${failCount} skill(s) failed to update`));
+            }
+            console.log('');
+
+        } catch (error) {
+            console.error(chalk.red('Error updating skills:'), error);
+            process.exit(1);
+        }
+    });
+
+// Register the remove command
+registerRemoveCommand(program, AGENTS);
 
 program.parse();
 

@@ -1,11 +1,11 @@
 # Agent Skills CLI 🚀
 
-> **One CLI. 100,000+ skills. 29 AI agents.**
+> **One CLI. 100,000+ skills. 42 AI agents.**
 
 [![npm version](https://img.shields.io/npm/v/agent-skills-cli)](https://www.npmjs.com/package/agent-skills-cli)
 [![license](https://img.shields.io/npm/l/agent-skills-cli)](LICENSE)
 
-Install skills from the world's largest marketplace and sync them to **29 AI agents** including Cursor, Claude Code, GitHub Copilot, Windsurf, Cline, Gemini CLI, and more — all with a single command.
+Install skills from the world's largest marketplace and sync them to **42 AI agents** including Cursor, Claude Code, GitHub Copilot, Windsurf, Cline, Gemini CLI, Zed, and more — all with a single command.
 
 🌐 **Website:** [agentskills.in](https://agentskills.in)
 
@@ -19,12 +19,12 @@ skills install @anthropic/xlsx
 ## ✨ Features
 
 - **100,000+ Skills** — Access the largest collection of AI agent skills
-- **Interactive Search** — Search and install in one command: `skills search python`
-- **29 AI Agents** — Cursor, Claude, Copilot, Windsurf, Cline, Gemini CLI, and 23 more
-- **Global Install** — Install globally with `-g` or to project with default
-- **Git URL Support** — Install from GitHub, GitLab, or local paths
+- **FZF Interactive Search** — Real-time search with keyboard navigation: `skills search -i`
+- **42 AI Agents** — Cursor, Claude, Copilot, Windsurf, Cline, Gemini CLI, Zed, and 35+ more
+- **Lock File Tracking** — Track all installations in `~/.skills/skills.lock`
+- **Git URL Support** — Install from GitHub, GitLab, or repos: `skills add owner/repo@skill`
 - **Platform Targeting** — Install to specific platforms with `-t claude,cursor`
-- **Update Tracking** — Check installed skills with `skills check`
+- **Update & Remove** — Full lifecycle: `skills update`, `skills check`, `skills remove`
 - **Privacy-First Telemetry** — Anonymous usage tracking with opt-out
 
 ---
@@ -57,8 +57,20 @@ skills install docx --all
 # Install from Git repo
 skills add vercel-labs/agent-skills
 
+# Install specific skill from repo (new @skill syntax)
+skills add anthropic/skills@xlsx
+
 # List skills in a repo
 skills add owner/repo --list
+
+# Remove installed skills
+skills remove xlsx
+
+# Check installed skills
+skills check
+
+# Update skills from source
+skills update --all
 
 # Search and install skills interactively
 skills search python
@@ -78,8 +90,10 @@ skills search react --json
 | `skills install <name>` | Install a skill from marketplace |
 | `skills add <source>` | Install from Git repo (owner/repo or URL) |
 | `skills search <query>` | Search and install skills interactively |
-| `skills check` | Check installed skills across all agents |
-| `skills update` | Update installed skills to latest versions |
+| `skills search -i` | FZF-style interactive search with keyboard navigation |
+| `skills check` | Check installed skills with source and version info |
+| `skills update` | Update skills from their source repos |
+| `skills remove` | Remove installed skills (interactive multi-select) |
 | `skills doctor` | Diagnose issues |
 
 ### Install Options
@@ -97,6 +111,7 @@ skills install <name> --list       # Show details without installing
 
 ```bash
 skills add owner/repo              # GitHub shorthand
+skills add owner/repo@skill-name   # NEW: Install specific skill directly
 skills add https://github.com/user/repo  # Full URL
 skills add https://gitlab.com/org/repo   # GitLab
 skills add owner/repo --list       # List skills in repo
@@ -116,7 +131,7 @@ skills info               # Show installation status
 
 ---
 
-## 🤖 Supported Platforms (29 Agents)
+## 🤖 Supported Platforms (42 Agents)
 
 | Platform | Project Dir | Global Dir |
 |----------|-------------|------------|
@@ -127,11 +142,11 @@ skills info               # Show installation status
 | **Windsurf** | `.windsurf/skills/` | `~/.codeium/windsurf/skills/` |
 | **Cline** | `.cline/skills/` | `~/.cline/skills/` |
 | **Gemini CLI** | `.gemini/skills/` | `~/.gemini/skills/` |
+| **Zed** | `.zed/skills/` | `~/.config/zed/skills/` |
 | **Antigravity** | `.agent/skills/` | `~/.gemini/antigravity/skills/` |
 | **OpenCode** | `.opencode/skill/` | `~/.config/opencode/skill/` |
-| **Amp** | `.agents/skills/` | `~/.config/agents/skills/` |
 
-**+19 more agents:** Kilo, Roo, Goose, CodeBuddy, Continue, Crush, Clawdbot, Droid, Kiro, MCPJam, Mux, OpenHands, Pi, Qoder, Qwen Code, Trae, Zencoder, Neovate, Command Code
+**+32 more agents:** Amp, Kilo, Roo, Goose, CodeBuddy, Continue, Crush, Clawdbot, Droid, Kiro, MCPJam, Mux, OpenHands, Pi, Qoder, Qwen Code, Trae, Zencoder, Neovate, Command Code, Ara, Aide, Alex, BB, CodeStory, Helix AI, Meekia, Pear AI, Adal, Pochi, Sourcegraph Cody, Void AI
 
 ---
 

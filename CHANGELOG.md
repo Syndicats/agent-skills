@@ -2,6 +2,62 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.8] - 2026-02-01
+
+### 🤖 13 New Agents (42 Total)
+- **Ara** (`.ara/skills`)
+- **Aide** (`.aide/skills`)
+- **Alex** (`.alex/skills`)
+- **BB** (`.bb/skills`)
+- **CodeStory** (`.codestory/skills`)
+- **Helix AI** (`.helix/skills`)
+- **Meekia** (`.meekia/skills`)
+- **Pear AI** (`.pear/skills`)
+- **Adal** (`.adal/skills`)
+- **Pochi** (`.pochi/skills`)
+- **Sourcegraph Cody** (`.cody/skills`)
+- **Void AI** (`.void/skills`)
+- **Zed** (`.zed/skills`)
+
+### 🔍 FZF Interactive Search
+- New `-i/--interactive` flag for `skills search`
+- Real-time fuzzy search with keyboard navigation (↑↓ arrows)
+- Enter to select, Escape to cancel
+- Auto-prompts to install selected skill
+- 200ms debounce for API efficiency
+
+### 🔒 Lock File Tracking System
+- All installations tracked in `~/.skills/skills.lock`
+- Stores source URL, type (database/github/gitlab/local), version (commit SHA)
+- Tracks installation date, agents, and scope (global/project)
+- Foundation for reliable check/update/remove operations
+
+### 🗑️ New `skills remove` Command
+- Interactive multi-select skill removal
+- Filter by agent: `skills remove --agent cursor`
+- Filter by global: `skills remove -g`
+- Skip confirmation: `skills remove xlsx -y`
+- Remove all: `skills remove --all`
+
+### 📦 Enhanced `skills check` Command
+- Now uses lock file for accurate tracking
+- Shows source type with emoji indicators (🌐 Database, 🐙 GitHub, 🦊 GitLab, 📁 Local)
+- Displays installation date and version
+- JSON output: `skills check --json`
+
+### 🔄 New `skills update` Command
+- Re-downloads skills from their source repos
+- Interactive selection or `--all` for all skills
+- Updates version tracking in lock file
+- Supports GitHub and GitLab sources
+
+### 🎯 `@skill` Syntax for `skills add`
+- Install specific skill directly: `skills add owner/repo@skill-name`
+- Skips interactive selection when skill is specified
+- Equivalent to: `skills add owner/repo --skill skill-name`
+
+---
+
 ## [1.0.7] - 2026-01-27
 
 ### 🤖 19 New Agents (29 Total)

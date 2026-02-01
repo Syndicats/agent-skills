@@ -121,3 +121,44 @@ export {
 } from './source-parser.js';
 
 export type { ParsedSource } from './source-parser.js';
+
+// Installer (symlink-based installation)
+export {
+    getCanonicalSkillsDir,
+    getCanonicalPath,
+    getAgentSkillPath,
+    isSymlink,
+    installSkillWithSymlinks,
+    removeSkillInstallation,
+    getSkillInstallMethod
+} from './installer.js';
+
+export type {
+    AgentConfig,
+    InstallOptions,
+    InstalledSkillInfo
+} from './installer.js';
+
+// Skill Lock (installation tracking)
+export {
+    getLockFilePath,
+    readLock,
+    writeLock,
+    addSkillToLock,
+    removeSkillFromLock,
+    getSkillFromLock,
+    listInstalledSkills,
+    isSkillInstalled,
+    getInstalledSkillCount,
+    updateSkillVersion,
+    updateSkillAgents,
+    createLockEntry
+} from './skill-lock.js';
+
+export type {
+    SourceType,
+    LockEntry,
+    SkillsLock,
+    ListOptions
+} from './skill-lock.js';
+
