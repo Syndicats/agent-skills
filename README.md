@@ -42,22 +42,22 @@ npm install -g agent-skills-cli
 ## 🚀 Quick Start
 
 ```bash
-# Install a skill (auto-detects platforms)
-skills install xlsx
+# ⭐ Install a skill (auto-detects platforms)
+skills install @facebook/verify
 
-# Install to specific platforms
-skills install @anthropic/pdf -t claude,cursor
-
-# Install globally (home directory)
-skills install pdf -g -t claude
-
-# Install to all 10 platforms
-skills install docx --all
-
-# Install from Git repo
+# ⭐ Install from a GitHub repo
 skills add vercel-labs/agent-skills
 
-# Install specific skill from repo (new @skill syntax)
+# Install to specific platforms
+skills install @facebook/verify -a claude,cursor
+
+# Install to ALL 42 platforms at once
+skills install @lobehub/typescript --all
+
+# Install globally (home directory)
+skills install pdf -g -a claude
+
+# Install specific skill from repo
 skills add anthropic/skills@xlsx
 
 # List skills in a repo
@@ -99,12 +99,13 @@ skills search react --json
 ### Install Options
 
 ```bash
-skills install <name>              # Auto-detect platforms
-skills install <name> -g           # Install globally (~/.claude/skills/)
-skills install <name> -t claude    # Install to Claude only
-skills install <name> -t cursor,copilot  # Install to multiple
-skills install <name> --all        # Install to all 10 platforms
-skills install <name> --list       # Show details without installing
+skills install @facebook/verify          # Auto-detect platforms (prompts)
+skills install @facebook/verify -a cursor # Install to Cursor only
+skills install @lobehub/typescript -a cursor,claude  # Install to multiple
+skills install @facebook/verify --all     # Install to all 42 agents
+skills install pdf -g -a claude           # Install globally (~/.claude/skills/)
+skills install -s verify -a cursor        # Install by skill name
+skills add @facebook/verify -a cursor     # 'add' is an alias for 'install'
 ```
 
 ### Git URL Install (`skills add`)

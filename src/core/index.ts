@@ -162,3 +162,43 @@ export type {
     ListOptions
 } from './skill-lock.js';
 
+// Suggest engine (project-aware recommendations)
+export {
+    analyzeProject,
+    buildSearchKeywords,
+    scoreSkill,
+} from './suggest.js';
+
+export type {
+    ProjectAnalysis,
+    SuggestedSkill,
+    SuggestOptions,
+} from './suggest.js';
+
+// Audit engine (security scanning)
+export {
+    runAudit,
+    shouldFail,
+    toSARIF,
+} from './audit.js';
+
+export type {
+    AuditOptions,
+} from './audit.js';
+
+// Scanner rules (security rule definitions)
+export {
+    SCANNER_RULES,
+    getRulesByCategory,
+    getRuleById,
+    getCategories,
+    createEmptyScanResult,
+} from './scanner-rules.js';
+
+export type {
+    ScannerRule,
+    ScanFinding,
+    ScanResult,
+    Severity,
+} from './scanner-rules.js';
+

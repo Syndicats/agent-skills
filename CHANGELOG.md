@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.9] - 2026-02-11
+
+### 🔧 `add` Alias for `install`
+- `skills add` is now an alias for `skills install`
+- `skills add @facebook/verify -a cursor` works identically to `skills install @facebook/verify -a cursor`
+- Both commands support all the same options: `-a`, `--all`, `-g`, `-s`, `-y`
+
+### 🌐 `--all` Flag — Install to All 42 Agents
+- New `--all` flag installs a skill to every supported agent in one command
+- Example: `skills install @facebook/verify --all` → installs to all 42 agents
+- Works with all install sources: marketplace, GitHub repos, local directories
+
+### 🎯 `@scoped/name` Install Fix
+- `skills install @facebook/verify` now routes through a dedicated marketplace lookup
+- Previously, `@scoped/name` patterns fell through to generic URL matching and often failed
+- Now correctly parses `@author/skillname`, queries the database, and installs via the skill's GitHub URL
+
+### 📤 Standardized Export Directory Structure
+- All 42 agents now export to the unified `.agentname/skills/skillname/SKILL.md` format
+- Removed legacy hardcoded formats (`.cursorrules`, single merged `.md` files)
+- `export.ts` rewritten to dynamically support all agents from the `AGENTS` config
+- Added `--list-agents` flag to show all 42 supported agents
+- Comma-separated targets: `skills export -t cursor,claude,copilot`
+
+### 🏗️ CLI Modular Architecture
+- All 50 commands refactored into modular files under `src/cli/commands/`
+- `index.ts` is now a thin orchestrator — all command logic in dedicated modules
+- Shared agent config in `agents.ts` used by all commands
+
+---
+
 ## [1.0.8] - 2026-02-01
 
 ### 🤖 13 New Agents (42 Total)
