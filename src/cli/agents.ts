@@ -276,3 +276,58 @@ export function getInstallPath(agent: string, global: boolean): string {
     if (!config) return `.${agent}/skills`;
     return global ? config.globalDir : config.projectDir;
 }
+
+// ── Adapter Factory ────────────────────────────────────────────────────
+
+import type { AgentAdapter } from '../adapters/adapter.js';
+import { CursorAdapter } from '../adapters/cursor.js';
+import { ClaudeAdapter } from '../adapters/claude.js';
+import { CopilotAdapter } from '../adapters/copilot.js';
+import { UniversalAdapter } from '../adapters/universal.js';
+
+/** Cache for adapters (lazy singleton per agent) */
+const adapterCache = new Map<string, AgentAdapter>();
+
+/**
+ * Get an adapter for a given agent name.
+ * Returns specific adapters for cursor/claude/copilot,
+ * and a UniversalAdapter for everything else.
+ */
+export function getAdapter(agentName: string): AgentAdapter {
+    const cached = adapterCache.get(agentName);
+    if (cached) return cached;
+
+    let adapter: AgentAdapter;
+
+    switch (agentName) {
+        case 'cursor':
+            adapter = new CursorAdapter();
+            break;
+        case 'claude':
+            adapter = new ClaudeAdapter();
+            break;
+        case 'copilot':
+            adapter = new CopilotAdapter();
+            break;
+        default: {
+            const config = AGENTS[agentName];
+            if (config) {
+                adapter = new UniversalAdapter(config.name, config.displayName, config.projectDir, config.globalDir);
+            } else {
+                // Fallback for unknown agents
+                adapter = new UniversalAdapter(agentName, agentName, `.${agentName}/skills`, `${home}/.${agentName}/skills`);
+            }
+            break;
+        }
+    }
+
+    adapterCache.set(agentName, adapter);
+    return adapter;
+}
+
+/**
+ * Get all adapters for all known agents.
+ */
+export function getAllAdapters(): AgentAdapter[] {
+    return Object.keys(AGENTS).map(name => getAdapter(name));
+}

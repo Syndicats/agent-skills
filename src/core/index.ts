@@ -202,3 +202,15 @@ export type {
     Severity,
 } from './scanner-rules.js';
 
+// Quality scoring (4-dimension skill assessment)
+export {
+    assessQuality,
+    formatScoreBar,
+    getScoreColor,
+} from './quality.js';
+
+export type {
+    QualityScore,
+    ScoreDetail,
+} from './quality.js';
+

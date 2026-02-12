@@ -1,11 +1,13 @@
 # Agent Skills CLI 🚀
 
-> **One CLI. 100,000+ skills. 42 AI agents.**
+> **One CLI. 175,000+ skills. 42 AI agents.**
 
 [![npm version](https://img.shields.io/npm/v/agent-skills-cli)](https://www.npmjs.com/package/agent-skills-cli)
 [![license](https://img.shields.io/npm/l/agent-skills-cli)](LICENSE)
 
 Install skills from the world's largest marketplace and sync them to **42 AI agents** including Cursor, Claude Code, GitHub Copilot, Windsurf, Cline, Gemini CLI, Zed, and more — all with a single command.
+
+**What's new in v1.1.0:** Quality scoring (`skills score`), repo auto-indexing (`skills submit-repo`), and a formal adapter pattern architecture.
 
 🌐 **Website:** [agentskills.in](https://agentskills.in)
 
@@ -18,9 +20,12 @@ skills install @anthropic/xlsx
 
 ## ✨ Features
 
-- **100,000+ Skills** — Access the largest collection of AI agent skills
+- **175,000+ Skills** — Access the largest collection of AI agent skills
 - **FZF Interactive Search** — Real-time search with keyboard navigation: `skills search -i`
 - **42 AI Agents** — Cursor, Claude, Copilot, Windsurf, Cline, Gemini CLI, Zed, and 35+ more
+- **Quality Scoring** — 4-dimension skill scoring (0–100): `skills score`
+- **Repo Auto-Index** — Submit entire repos to the marketplace: `skills submit-repo owner/repo`
+- **Adapter Architecture** — Formal adapter pattern for clean multi-agent support
 - **Lock File Tracking** — Track all installations in `~/.skills/skills.lock`
 - **Git URL Support** — Install from GitHub, GitLab, or repos: `skills add owner/repo@skill`
 - **Platform Targeting** — Install to specific platforms with `-t claude,cursor`
@@ -94,6 +99,8 @@ skills search react --json
 | `skills check` | Check installed skills with source and version info |
 | `skills update` | Update skills from their source repos |
 | `skills remove` | Remove installed skills (interactive multi-select) |
+| `skills score [path]` | Score skill quality (0–100, grades F–A) |
+| `skills submit-repo <repo>` | Submit a GitHub repo for marketplace auto-indexing |
 | `skills doctor` | Diagnose issues |
 
 ### Install Options
@@ -128,6 +135,23 @@ skills validate <path>    # Validate a SKILL.md file
 skills export             # Export skills to agents
 skills sync               # Sync to Antigravity workflows
 skills info               # Show installation status
+```
+
+### Quality Scoring
+
+```bash
+skills score ./my-skill             # Score a skill (0–100, grade F–A)
+skills score ./my-skill --verbose    # Show individual check details
+skills score ./my-skill --json       # Machine-readable output
+```
+
+**Dimensions:** Structure (30%), Clarity (30%), Specificity (30%), Advanced (10%)
+
+### Submit Repos to Marketplace
+
+```bash
+skills submit-repo Jeffallan/claude-skills   # Auto-index all skills in repo
+skills submit-repo vercel-labs/agent-skills   # Skills appear on marketplace
 ```
 
 ---

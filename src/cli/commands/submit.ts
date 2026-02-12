@@ -11,6 +11,7 @@ import { readFile, stat } from 'fs/promises';
 import { existsSync } from 'fs';
 import { resolve, join, basename } from 'path';
 import { loadSkill, validateMetadata, validateBody } from '../../core/index.js';
+import { assessQuality, formatScoreBar, getScoreColor } from '../../core/quality.js';
 
 export interface SubmitOptions {
     dryRun?: boolean;
@@ -103,6 +104,16 @@ async function submitCommand(targetPath: string, options: SubmitOptions): Promis
     }
 
     spinner.succeed('Skill validated');
+    console.log('');
+
+    // Step 1.5: Quality score
+    const quality = await assessQuality(resolvedPath);
+    const qColor = getScoreColor(quality.overall);
+    console.log(`  ${chalk.dim('Quality:')}     ${chalk[qColor](formatScoreBar(quality.overall, 15))} ${chalk.bold[qColor](quality.grade)}`);
+    if (quality.overall < 50) {
+        console.log(chalk.yellow(`  ⚠ Low quality score (${quality.overall}/100). Consider improving before submitting.`));
+        console.log(chalk.dim(`    Run: skills score ${targetPath} --verbose`));
+    }
     console.log('');
 
     // Step 2: Extract metadata

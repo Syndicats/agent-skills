@@ -53,6 +53,8 @@ import { registerBlueprintCommand } from './commands/blueprint.js';
 import { registerCiCommand } from './commands/ci.js';
 import { registerTrackCommand } from './commands/track.js';
 import { registerInsightCommand } from './commands/insight.js';
+import { registerScoreCommand } from './commands/score.js';
+import { registerSubmitRepoCommand } from './commands/submit-repo.js';
 import { registerMethodCommand } from './commands/method.js';
 
 // ─── Program setup ─────────────────────────────────────────────────────────
@@ -287,5 +289,7 @@ registerCiCommand(program);
 registerTrackCommand(program);
 registerInsightCommand(program);
 registerMethodCommand(program);
+registerScoreCommand(program);
+registerSubmitRepoCommand(program);
 
 program.parse();

@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-02-12
+
+### 🎯 `skills score` — Quality Scoring System
+- New 4-dimension scoring system to evaluate skill quality (0–100 with letter grades F–A)
+  - **Structure** (30%) — SKILL.md exists, YAML frontmatter, name/description fields, directory layout
+  - **Clarity** (30%) — Description length, section headings, "When to Use" section, examples, formatting
+  - **Specificity** (30%) — Code blocks, numbered steps, tool/command references, file paths, constraints
+  - **Advanced** (10%) — `scripts/` directory, `references/` directory, anti-patterns section, changelog, tests
+- Output modes: default summary, `--verbose` (individual check details), `--json` (machine-readable)
+- Integrated into `skills show` — displays quality badge alongside skill details
+- Integrated into `skills submit` — warns if score is below 50 before publishing
+
+### 🏗️ Formal Adapter Pattern Architecture
+- Introduced `AgentAdapter` interface and `BaseAdapter` abstract class for all agent integrations
+- **Specialized adapters:** `CursorAdapter`, `ClaudeAdapter`, `CopilotAdapter` for agents with custom behavior
+- **`UniversalAdapter`** handles the remaining 37+ agents via a data-driven agent registry
+- Refactored `convert.ts` and `export.ts` to use adapters instead of hardcoded agent logic
+- Cached factory function `getAdapter(agentName)` provides the correct adapter instance
+- Adding a new agent now requires only a config entry in `agents.ts` — no code changes needed
+
+### 📤 `skills submit-repo` — Submit & Auto-Index Repos
+- New command to submit an entire GitHub repository for marketplace auto-indexing
+- Usage: `skills submit-repo <owner/repo>` (e.g. `skills submit-repo Jeffallan/claude-skills`)
+- **Full pipeline:**
+  1. Validates repo exists via GitHub API
+  2. Scans for all `SKILL.md` files using Git Trees API
+  3. Fetches raw content via `raw.githubusercontent.com`
+  4. Parses frontmatter (name, description) from each SKILL.md
+  5. Upserts each skill into the `skills` database table
+  6. Refreshes global `skill_stats` cache
+  7. Returns `{ indexed: N, errors: 0 }`
+- Already-indexed repos return a 405 status with a clear message
+- After submission, skills appear at `https://www.agentskills.in/marketplace?author=<owner>`
+
+---
+
 ## [1.0.9] - 2026-02-11
 
 ### 🔧 `add` Alias for `install`

@@ -10,25 +10,18 @@ import { Command } from 'commander';
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { resolve, join, basename, dirname } from 'path';
+import { getAdapter, AGENTS } from '../agents.js';
+import type { ParsedSkillInput } from '../../adapters/adapter.js';
 
 interface ConvertOptions {
     output?: string;
     overwrite?: boolean;
 }
 
-type AgentFormat = 'cursor' | 'claude' | 'copilot' | 'codex' | 'windsurf' | 'antigravity';
+type AgentFormat = string;
 
-// File patterns for each agent format
-const FORMAT_MAP: Record<AgentFormat, { file: string; dir: string }> = {
-    cursor: { file: 'SKILL.md', dir: '.cursor/skills' },
-    claude: { file: 'SKILL.md', dir: '.claude/skills' },
-    copilot: { file: 'SKILL.md', dir: '.github/skills' },
-    codex: { file: 'SKILL.md', dir: '.codex/skills' },
-    windsurf: { file: 'SKILL.md', dir: '.windsurf/skills' },
-    antigravity: { file: 'SKILL.md', dir: '.agent/skills' },
-};
-
-const VALID_FORMATS = Object.keys(FORMAT_MAP);
+// Derive valid formats from the AGENTS registry + well-known names
+const VALID_FORMATS = Object.keys(AGENTS);
 
 /**
  * Register the convert command
@@ -79,14 +72,20 @@ async function convertCommand(source: string, targetFormat: AgentFormat, options
     // Parse source into intermediate representation
     const parsed = parseSkillContent(content, sourceFormat);
 
-    // Convert to target format
-    const converted = renderToFormat(parsed, targetFormat);
+    // Convert to target format using adapter
+    const adapter = getAdapter(targetFormat);
+    const converted = adapter.generateConfig({
+        name: parsed.name,
+        description: parsed.description,
+        rawContent: parsed.rawContent,
+        sections: parsed.sections,
+        frontmatter: parsed.frontmatter,
+    });
 
-    // Determine output path
-    const target = FORMAT_MAP[targetFormat];
+    // Determine output path using adapter
     const outputPath = options.output
         ? resolve(options.output)
-        : join(dirname(sourcePath), target.dir, target.file);
+        : join(dirname(sourcePath), adapter.getProjectDir(), adapter.getSkillFilename());
 
     if (existsSync(outputPath) && !options.overwrite) {
         spinner.fail(`Output file exists: ${outputPath}`);
@@ -185,23 +184,8 @@ function parseSkillContent(content: string, format: AgentFormat): ParsedSkill {
     return parsed;
 }
 
-function renderToFormat(parsed: ParsedSkill, format: AgentFormat): string {
-    switch (format) {
-        case 'antigravity':
-            return renderAsSkillMd(parsed);
-        case 'cursor':
-        case 'windsurf':
-            return renderAsCursorRules(parsed);
-        case 'claude':
-            return renderAsClaudeMd(parsed);
-        case 'copilot':
-            return renderAsCopilot(parsed);
-        case 'codex':
-            return renderAsAgentsMd(parsed);
-        default:
-            return parsed.rawContent;
-    }
-}
+// Legacy render functions kept for backwards compatibility
+// Adapters call these internally when needed
 
 function renderAsSkillMd(parsed: ParsedSkill): string {
     const lines: string[] = [];
@@ -216,36 +200,4 @@ function renderAsSkillMd(parsed: ParsedSkill): string {
         lines.push('');
     }
     return lines.join('\n');
-}
-
-function renderAsCursorRules(parsed: ParsedSkill): string {
-    const lines: string[] = [];
-    if (parsed.name) lines.push(`# ${parsed.name}`);
-    lines.push('');
-    for (const section of parsed.sections) {
-        if (section.heading) lines.push(`## ${section.heading}`);
-        if (section.content) lines.push(section.content);
-        lines.push('');
-    }
-    return lines.join('\n');
-}
-
-function renderAsClaudeMd(parsed: ParsedSkill): string {
-    return renderAsCursorRules(parsed);
-}
-
-function renderAsCopilot(parsed: ParsedSkill): string {
-    const lines: string[] = [];
-    lines.push(`# Copilot Instructions${parsed.name ? `: ${parsed.name}` : ''}`);
-    lines.push('');
-    for (const section of parsed.sections) {
-        if (section.heading) lines.push(`## ${section.heading}`);
-        if (section.content) lines.push(section.content);
-        lines.push('');
-    }
-    return lines.join('\n');
-}
-
-function renderAsAgentsMd(parsed: ParsedSkill): string {
-    return renderAsClaudeMd(parsed);
 }

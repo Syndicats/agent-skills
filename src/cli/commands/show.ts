@@ -10,6 +10,7 @@ import {
     generateSkillsPromptXML,
     generateFullSkillsContext,
 } from '../../core/index.js';
+import { assessQuality, formatScoreBar, getScoreColor } from '../../core/quality.js';
 
 export function registerShowCommand(program: Command) {
     // Show command
@@ -68,6 +69,14 @@ export function registerShowCommand(program: Command) {
                 if (skill.body.split('\n').length > 10) {
                     console.log(chalk.gray('...'));
                 }
+
+                // Quality score badge
+                try {
+                    const quality = await assessQuality(skill.path);
+                    const qColor = getScoreColor(quality.overall);
+                    console.log(chalk.cyan('\nQuality:'), chalk[qColor](`${quality.grade} (${quality.overall}/100)  ${formatScoreBar(quality.overall, 12)}`));
+                } catch { /* skip if scoring fails */ }
+
                 console.log('');
             } catch (error) {
                 console.error(chalk.red('Error showing skill:'), error);

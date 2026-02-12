@@ -8,7 +8,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import { discoverSkills, loadSkill } from '../../core/index.js';
-import { AGENTS } from '../agents.js';
+import { AGENTS, getAdapter } from '../agents.js';
 
 export function registerExportCommand(program: Command) {
     // Build the list of valid agent names from AGENTS config
@@ -83,8 +83,8 @@ export function registerExportCommand(program: Command) {
                     const spinner = ora(`Exporting for ${target}...`).start();
 
                     try {
-                        const config = AGENTS[target];
-                        const skillsDir = join(options.directory, config.projectDir);
+                        const adapter = getAdapter(target);
+                        const skillsDir = join(options.directory, adapter.getProjectDir());
 
                         // Export each skill to: .agentname/skills/skillname/SKILL.md
                         for (const skillRef of skills) {
@@ -94,9 +94,17 @@ export function registerExportCommand(program: Command) {
                             const skillDir = join(skillsDir, skillRef.name);
                             await mkdir(skillDir, { recursive: true });
 
-                            // Write SKILL.md with frontmatter
-                            const content = `---\nname: ${skill.metadata.name}\ndescription: ${skill.metadata.description}\n---\n\n${skill.body}\n`;
-                            await writeFile(join(skillDir, 'SKILL.md'), content);
+                            // Use adapter to generate the config content
+                            const content = adapter.generateConfig({
+                                name: skill.metadata.name,
+                                description: skill.metadata.description,
+                                rawContent: skill.body,
+                                frontmatter: {
+                                    name: skill.metadata.name,
+                                    description: skill.metadata.description,
+                                },
+                            });
+                            await writeFile(join(skillDir, adapter.getSkillFilename()), content);
 
                             // Copy optional directories (scripts/, references/, assets/) if they exist
                             const optionalDirs = ['scripts', 'references', 'assets'];
@@ -110,7 +118,7 @@ export function registerExportCommand(program: Command) {
                             }
                         }
 
-                        spinner.succeed(`${config.displayName}: ${config.projectDir}/<skill>/SKILL.md`);
+                        spinner.succeed(`${adapter.displayName}: ${adapter.getProjectDir()}/<skill>/${adapter.getSkillFilename()}`);
                         successCount++;
                     } catch (err: any) {
                         spinner.fail(`${target}: ${err.message}`);
