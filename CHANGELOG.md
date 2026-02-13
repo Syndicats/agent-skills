@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.3] - 2026-02-13
+
+### 🔍 Smart Skill Discovery & Selection
+- **Deep SKILL.md search** — Recursively scans repos up to 3 levels deep, catching `skills/nestjs-expert/SKILL.md` patterns that were previously missed
+- **Interactive skill selection** — When multiple skills found in a repo, presents a multiselect prompt to pick specific skills or install all at once
+- Successfully discovers and offers **66+ skills** from repos like `Jeffallan/claude-skills`
+
+### 🔀 `@owner/repo` Marketplace Fallback
+- `skills add @Jeffallan/claude-skills` now falls through to GitHub clone when not found in marketplace
+- Previously hard-failed with "Could not find in marketplace" — now strips `@` prefix and retries as Git source
+- Works with both marketplace errors and marketplace misses
+
+### 🐛 Source Parser Fixes
+- Fixed SSH URL regex to handle both colon (`:`) and slash (`/`) separators (e.g., `git@host:path` and `git@host/path`)
+- Improved GitHub shorthand parsing to detect domain-like names (containing dots) and route to `private-git`
+
+---
+
 ## [1.1.1] - 2026-02-13
 
 ### 🔐 Private Git Repos — Enterprise-Ready Installation

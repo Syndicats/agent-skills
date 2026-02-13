@@ -257,9 +257,9 @@ export function registerInstallCommand(program: Command) {
                 }
 
                 // ── Parse source with the unified source parser ──
-                const parsed = parseSource(source);
+                let parsed = parseSource(source);
 
-                // ── Handle @scoped/name — try marketplace first ──
+                // ── Handle @scoped/name — try marketplace first, fallback to GitHub ──
                 if (source.startsWith('@')) {
                     const spinner = ora(`Looking up "${source}" in marketplace...`).start();
                     try {
@@ -290,12 +290,23 @@ export function registerInstallCommand(program: Command) {
                             console.log('');
                             return;
                         } else {
-                            spinner.fail(`Could not find "${source}" in marketplace`);
-                            return;
+                            // Not in marketplace — strip @ and try as GitHub owner/repo
+                            const withoutAt = source.slice(1);
+                            spinner.info(`Not found in marketplace, trying as GitHub repo: ${withoutAt}`);
+                            source = withoutAt;
+                            // Re-parse the source without @
+                            const reparsed = parseSource(source);
+                            Object.assign(parsed, reparsed);
+                            // Fall through to git-based install below
                         }
-                    } catch (err: any) {
-                        spinner.fail(`Error: ${err.message}`);
-                        return;
+                    } catch {
+                        // Marketplace unavailable — strip @ and try as GitHub owner/repo
+                        const withoutAt = source.slice(1);
+                        spinner.info(`Marketplace unavailable, trying as GitHub repo: ${withoutAt}`);
+                        source = withoutAt;
+                        const reparsed = parseSource(source);
+                        Object.assign(parsed, reparsed);
+                        // Fall through to git-based install below
                     }
                 }
 
@@ -471,27 +482,60 @@ export function registerInstallCommand(program: Command) {
                         return;
                     }
 
-                    // Detect skills in repo
-                    const entries = await readdir(tempDir, { withFileTypes: true });
-                    let skillDirs: string[] = [];
-
-                    // Check if root is a skill
-                    if (existsSync(join(tempDir, 'SKILL.md'))) {
-                        skillDirs.push(tempDir);
-                    }
-
-                    // Check subdirectories
-                    for (const entry of entries) {
-                        if (entry.isDirectory() && !entry.name.startsWith('.')) {
-                            if (existsSync(join(tempDir, entry.name, 'SKILL.md'))) {
-                                skillDirs.push(join(tempDir, entry.name));
+                    // Detect skills in repo (recursive, up to 3 levels deep)
+                    async function findSkillDirs(dir: string, depth = 0, maxDepth = 3): Promise<string[]> {
+                        const results: string[] = [];
+                        if (existsSync(join(dir, 'SKILL.md'))) {
+                            results.push(dir);
+                        }
+                        if (depth < maxDepth) {
+                            const dirEntries = await readdir(dir, { withFileTypes: true });
+                            for (const entry of dirEntries) {
+                                if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
+                                    const sub = await findSkillDirs(join(dir, entry.name), depth + 1, maxDepth);
+                                    results.push(...sub);
+                                }
                             }
                         }
+                        return results;
                     }
+
+                    let skillDirs = await findSkillDirs(tempDir);
 
                     if (skillDirs.length === 0) {
                         // Treat entire repo as a skill
                         skillDirs.push(tempDir);
+                    }
+
+                    // Interactive skill selection when multiple skills found
+                    if (skillDirs.length > 1) {
+                        const { relative } = await import('path');
+                        const skillChoices = skillDirs.map(d => ({
+                            label: basename(d),
+                            value: d,
+                            hint: relative(tempDir, d),
+                        }));
+
+                        const selected = await p.multiselect({
+                            message: `Found ${skillDirs.length} skills. Select which to install:`,
+                            options: [
+                                { label: `✅ Install ALL (${skillDirs.length} skills)`, value: '__all__' },
+                                ...skillChoices,
+                            ],
+                            initialValues: ['__all__'],
+                            required: true,
+                        });
+
+                        if (p.isCancel(selected)) {
+                            p.cancel('Installation cancelled');
+                            await rm(tempDir, { recursive: true, force: true }).catch(() => { });
+                            return;
+                        }
+
+                        const selectedValues = selected as string[];
+                        if (!selectedValues.includes('__all__')) {
+                            skillDirs = selectedValues;
+                        }
                     }
 
                     const repoName = parsed.url.split('/').pop()?.replace('.git', '') || 'skill';

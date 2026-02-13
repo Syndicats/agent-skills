@@ -7,7 +7,7 @@
 
 Install skills from the world's largest marketplace and sync them to **42 AI agents** including Cursor, Claude Code, GitHub Copilot, Windsurf, Cline, Gemini CLI, Zed, and more — all with a single command.
 
-**What's new in v1.1.2:** Private Git repos (GitLab, Bitbucket, SSH, self-hosted), npm packages, `.skillsrc` config files, and automatic credential resolution.
+**What's new in v1.1.3:** Smart skill discovery (deep recursive search), interactive skill selection for multi-skill repos, and `@owner/repo` marketplace fallback to GitHub clone.
 
 🌐 **Website:** [agentskills.in](https://agentskills.in)
 
