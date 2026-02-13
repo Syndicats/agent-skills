@@ -7,7 +7,7 @@
 
 Install skills from the world's largest marketplace and sync them to **42 AI agents** including Cursor, Claude Code, GitHub Copilot, Windsurf, Cline, Gemini CLI, Zed, and more — all with a single command.
 
-**What's new in v1.1.0:** Private Git repos (GitLab, Bitbucket, SSH, self-hosted), npm packages, `.skillsrc` config files, and automatic credential resolution.
+**What's new in v1.1.2:** Private Git repos (GitLab, Bitbucket, SSH, self-hosted), npm packages, `.skillsrc` config files, and automatic credential resolution.
 
 🌐 **Website:** [agentskills.in](https://agentskills.in)
 
@@ -163,7 +163,7 @@ skills install npm:chalk
 skills install npm:@anthropic/skills
 
 # Scoped package with version
-skills install npm:@company/skills@1.1.1
+skills install npm:@company/skills@1.1.2
 
 # Private npm registry
 skills install npm:@company/skills --registry https://npm.company.com

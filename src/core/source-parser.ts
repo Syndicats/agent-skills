@@ -83,14 +83,14 @@ export function parseSource(input: string): ParsedSource {
         };
     }
 
-    // SSH URL: git@hostname:owner/repo.git
-    const sshMatch = input.match(/^git@([^:]+):(.+?)(?:\.git)?$/);
+    // SSH URL: git@hostname:owner/repo.git or git@hostname/owner/repo.git
+    const sshMatch = input.match(/^git@([^:/]+)[:/](.+?)(?:\.git)?$/);
     if (sshMatch) {
         const [, host, path] = sshMatch;
         const parts = path.split('/');
         return {
             type: 'private-git',
-            url: input,
+            url: input.includes(':') ? input : `git@${host}:${path}${input.endsWith('.git') ? '' : '.git'}`,
             sshHost: host,
             subpath: parts.length > 2 ? parts.slice(2).join('/') : undefined,
         };
@@ -219,9 +219,21 @@ export function parseSource(input: string): ParsedSource {
     }
 
     // GitHub shorthand: owner/repo or owner/repo/path/to/skill
+    // But NOT if 'owner' looks like a domain name (contains dots, e.g. git.company.com)
     const shorthandMatch = input.match(/^([^/]+)\/([^/]+)(?:\/(.+))?$/);
     if (shorthandMatch && !input.includes(':') && !input.startsWith('.') && !input.startsWith('/')) {
         const [, owner, repo, subpath] = shorthandMatch;
+
+        // If the 'owner' part contains dots, it's likely a domain name (e.g. git.wosai-inc.com)
+        // Treat it as a self-hosted Git URL instead of GitHub shorthand
+        if (owner!.includes('.')) {
+            const fullPath = subpath ? `${repo}/${subpath}` : repo;
+            return {
+                type: 'private-git',
+                url: `https://${owner}/${fullPath}`,
+            };
+        }
+
         return {
             type: 'github',
             url: `https://github.com/${owner}/${repo}.git`,
