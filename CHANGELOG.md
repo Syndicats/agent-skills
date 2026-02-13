@@ -2,6 +2,57 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2026-02-13
+
+### 🔐 Private Git Repos — Enterprise-Ready Installation
+- Install from **private Git repositories** across any provider:
+  - GitHub (SSH/HTTPS), GitLab, Bitbucket, self-hosted Git instances
+  - SSH URLs: `skills install git@gitlab.com:team/repo.git`
+  - HTTPS with tokens: `skills install https://git.company.com/team/repo --token=xxx`
+  - Bitbucket: `skills install https://bitbucket.org/team/repo`
+- **Multi-strategy credential resolution** (in priority order):
+  1. `--token` CLI flag
+  2. Environment variables (`GH_TOKEN`, `GITLAB_TOKEN`, `BITBUCKET_TOKEN`, `GIT_TOKEN`)
+  3. SSH key detection (`ssh-agent`, `~/.ssh/`)
+  4. Git credential helper
+  5. `.netrc` file
+- Token masking in all logs and error messages for security
+- New `--token <token>` option on `skills install`
+
+### 📦 npm Package Support
+- Install skills directly from npm registries: `skills install npm:@scope/package`
+- Support for scoped packages, versions, and tags: `npm:@company/skills@1.1.1`
+- Private registries: `skills install npm:@company/skills --registry https://npm.company.com`
+- New `--registry <url>` option on `skills install`
+- Uses `npm pack` + `tar` extraction for clean installs
+
+### ⚙️ `.skillsrc` Configuration Files
+- New `.skillsrc` / `.skillsrc.json` config file support
+- Define custom Git sources, npm registries, and default settings
+- Project-level config (`./.skillsrc`) takes priority over user-level (`~/.skillsrc`)
+- Supports both JSON and simple YAML-like formats
+- Source filtering by type, registry lookup by scope, auth env var resolution
+
+### 🧪 Comprehensive Test Suite (85 Tests)
+- `source-parser.test.ts` — 32 tests for all URL formats (GitHub, GitLab, Bitbucket, SSH, npm, private-git)
+- `git-auth.test.ts` — 22 tests for host detection, URL manipulation, credential resolution
+- `skillsrc.test.ts` — 15 tests for config loading, source filtering, registry lookup
+- `skill-lock.test.ts` — 8 tests for expanded SourceType union and lock entries
+
+### 🏗️ Source Parser Improvements
+- New source types: `bitbucket`, `npm`, `private-git` added to `ParsedSource`
+- SSH URL detection (`git@host:owner/repo.git`)
+- Custom HTTPS Git URL detection (self-hosted instances)
+- `npm:` prefix detection with scope, version, and tag parsing
+- Tightened `isWellKnownUrl` to prevent false positives on arbitrary HTTPS URLs
+
+### 🔧 Lock File Expansion
+- `SourceType` expanded with `'bitbucket' | 'npm' | 'private-git'`
+- Lock entries correctly track new source types with version SHAs
+- Backward-compatible with existing lock files
+
+---
+
 ## [1.1.0] - 2026-02-12
 
 ### 🎯 `skills score` — Quality Scoring System

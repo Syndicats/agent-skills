@@ -113,7 +113,7 @@ export {
     setVersion
 } from './telemetry.js';
 
-// Source parser (GitHub, GitLab, local paths, direct URLs)
+// Source parser (GitHub, GitLab, Bitbucket, SSH, npm, local paths, direct URLs)
 export {
     parseSource,
     getOwnerRepo,
@@ -121,6 +121,19 @@ export {
 } from './source-parser.js';
 
 export type { ParsedSource } from './source-parser.js';
+
+// Git authentication (private repos, SSH, tokens)
+export {
+    detectGitHost,
+    resolveGitAuth,
+    buildAuthenticatedUrl,
+    sshToHttps,
+    normalizeGitUrl,
+    cloneWithAuth,
+    sanitizeUrl,
+} from './git-auth.js';
+
+export type { GitHost, GitAuthResult, CloneOptions } from './git-auth.js';
 
 // Installer (symlink-based installation)
 export {
@@ -201,6 +214,20 @@ export type {
     ScanResult,
     Severity,
 } from './scanner-rules.js';
+
+// .skillsrc configuration file support
+export {
+    loadSkillsRC,
+    getSourcesByType,
+    getRegistryForScope,
+    getAuthEnvVar,
+} from './skillsrc.js';
+
+export type {
+    SkillsRC,
+    SkillsRCSource,
+    SkillsRCDefaults,
+} from './skillsrc.js';
 
 // Quality scoring (4-dimension skill assessment)
 export {

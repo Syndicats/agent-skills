@@ -16,7 +16,7 @@ const LOCK_FILE = join(homedir(), '.skills', 'skills.lock');
 /**
  * Source type for installed skills
  */
-export type SourceType = 'database' | 'github' | 'gitlab' | 'local';
+export type SourceType = 'database' | 'github' | 'gitlab' | 'bitbucket' | 'npm' | 'private-git' | 'local';
 
 /**
  * Lock entry for a single installed skill

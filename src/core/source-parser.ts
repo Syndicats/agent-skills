@@ -7,6 +7,10 @@
  * - GitHub URLs: https://github.com/owner/repo
  * - GitHub shorthand: owner/repo
  * - GitLab URLs: https://gitlab.com/owner/repo
+ * - Bitbucket URLs: https://bitbucket.org/owner/repo
+ * - SSH URLs: git@host:owner/repo.git
+ * - npm packages: npm:@scope/package
+ * - Custom/self-hosted Git: https://git.company.com/team/repo
  * - Direct SKILL.md URLs
  * - Generic git URLs
  */
@@ -14,11 +18,15 @@
 import { isAbsolute, resolve } from 'path';
 
 export interface ParsedSource {
-    type: 'local' | 'github' | 'gitlab' | 'git' | 'direct-url' | 'well-known';
+    type: 'local' | 'github' | 'gitlab' | 'bitbucket' | 'npm' | 'private-git' | 'direct-url' | 'well-known';
     url: string;
     localPath?: string;
     ref?: string;
     subpath?: string;
+    /** npm registry URL (for npm sources) */
+    registry?: string;
+    /** SSH host (for SSH URLs) */
+    sshHost?: string;
 }
 
 /**
@@ -66,6 +74,28 @@ function isDirectSkillUrl(input: string): boolean {
  * Parse a source string into a structured format
  */
 export function parseSource(input: string): ParsedSource {
+    // npm package: npm:@scope/package or npm:package-name
+    const npmMatch = input.match(/^npm:(.+)$/);
+    if (npmMatch) {
+        return {
+            type: 'npm',
+            url: npmMatch[1],
+        };
+    }
+
+    // SSH URL: git@hostname:owner/repo.git
+    const sshMatch = input.match(/^git@([^:]+):(.+?)(?:\.git)?$/);
+    if (sshMatch) {
+        const [, host, path] = sshMatch;
+        const parts = path.split('/');
+        return {
+            type: 'private-git',
+            url: input,
+            sshHost: host,
+            subpath: parts.length > 2 ? parts.slice(2).join('/') : undefined,
+        };
+    }
+
     // Local path: absolute, relative, or current directory
     if (isLocalPath(input)) {
         const resolvedPath = resolve(input);
@@ -154,6 +184,40 @@ export function parseSource(input: string): ParsedSource {
         };
     }
 
+    // Bitbucket URL with path: https://bitbucket.org/owner/repo/src/branch/path
+    const bitbucketSrcMatch = input.match(/bitbucket\.org\/([^/]+)\/([^/]+)\/src\/([^/]+)\/(.+)/);
+    if (bitbucketSrcMatch) {
+        const [, owner, repo, ref, subpath] = bitbucketSrcMatch;
+        return {
+            type: 'bitbucket',
+            url: `https://bitbucket.org/${owner}/${repo}.git`,
+            ref,
+            subpath,
+        };
+    }
+
+    // Bitbucket URL with branch: https://bitbucket.org/owner/repo/src/branch
+    const bitbucketBranchMatch = input.match(/bitbucket\.org\/([^/]+)\/([^/]+)\/src\/([^/]+)$/);
+    if (bitbucketBranchMatch) {
+        const [, owner, repo, ref] = bitbucketBranchMatch;
+        return {
+            type: 'bitbucket',
+            url: `https://bitbucket.org/${owner}/${repo}.git`,
+            ref,
+        };
+    }
+
+    // Bitbucket URL: https://bitbucket.org/owner/repo
+    const bitbucketRepoMatch = input.match(/bitbucket\.org\/([^/]+)\/([^/]+)/);
+    if (bitbucketRepoMatch) {
+        const [, owner, repo] = bitbucketRepoMatch;
+        const cleanRepo = repo!.replace(/\.git$/, '');
+        return {
+            type: 'bitbucket',
+            url: `https://bitbucket.org/${owner}/${cleanRepo}.git`,
+        };
+    }
+
     // GitHub shorthand: owner/repo or owner/repo/path/to/skill
     const shorthandMatch = input.match(/^([^/]+)\/([^/]+)(?:\/(.+))?$/);
     if (shorthandMatch && !input.includes(':') && !input.startsWith('.') && !input.startsWith('/')) {
@@ -165,7 +229,7 @@ export function parseSource(input: string): ParsedSource {
         };
     }
 
-    // Well-known skills: arbitrary HTTP(S) URLs that aren't GitHub/GitLab
+    // Well-known skills: arbitrary HTTP(S) URLs that aren't GitHub/GitLab/Bitbucket
     if (isWellKnownUrl(input)) {
         return {
             type: 'well-known',
@@ -173,9 +237,17 @@ export function parseSource(input: string): ParsedSource {
         };
     }
 
-    // Fallback: treat as direct git URL
+    // Custom/self-hosted Git HTTPS URL (not a known host)
+    if (input.startsWith('http://') || input.startsWith('https://')) {
+        return {
+            type: 'private-git',
+            url: input,
+        };
+    }
+
+    // Fallback: treat as generic git URL
     return {
-        type: 'git',
+        type: 'private-git',
         url: input,
     };
 }
@@ -195,6 +267,7 @@ function isWellKnownUrl(input: string): boolean {
         const excludedHosts = [
             'github.com',
             'gitlab.com',
+            'bitbucket.org',
             'huggingface.co',
             'raw.githubusercontent.com',
         ];
@@ -212,7 +285,16 @@ function isWellKnownUrl(input: string): boolean {
             return false;
         }
 
-        return true;
+        // Only match if the URL explicitly has a well-known or skills path
+        // This prevents arbitrary HTTPS URLs from being classified as well-known
+        // instead of private-git
+        const wellKnownPatterns = [
+            '/.well-known/skills',
+            '/.well-known/agent-skills',
+            '/skills.json',
+            '/skill-registry',
+        ];
+        return wellKnownPatterns.some(pattern => parsed.pathname.includes(pattern));
     } catch {
         return false;
     }
@@ -227,9 +309,15 @@ export function getOwnerRepo(parsed: ParsedSource): string | null {
     }
 
     // Extract from git URL: https://github.com/owner/repo.git or similar
-    const match = parsed.url.match(/(?:github|gitlab)\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/);
+    const match = parsed.url.match(/(?:github|gitlab|bitbucket)\.(?:com|org)\/([^/]+)\/([^/]+?)(?:\.git)?$/);
     if (match) {
         return `${match[1]}/${match[2]}`;
+    }
+
+    // Extract from SSH URL: git@host:owner/repo.git
+    const sshOwnerRepo = parsed.url.match(/^git@[^:]+:([^/]+)\/([^/]+?)(?:\.git)?$/);
+    if (sshOwnerRepo) {
+        return `${sshOwnerRepo[1]}/${sshOwnerRepo[2]}`;
     }
 
     return null;
@@ -243,9 +331,11 @@ export function getSourceTypeDisplay(type: ParsedSource['type']): string {
         case 'local': return 'Local';
         case 'github': return 'GitHub';
         case 'gitlab': return 'GitLab';
+        case 'bitbucket': return 'Bitbucket';
+        case 'npm': return 'npm';
+        case 'private-git': return 'Private Git';
         case 'direct-url': return 'Direct URL';
         case 'well-known': return 'Well-Known';
-        case 'git': return 'Git';
         default: return 'Unknown';
     }
 }

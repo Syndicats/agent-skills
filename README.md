@@ -7,7 +7,7 @@
 
 Install skills from the world's largest marketplace and sync them to **42 AI agents** including Cursor, Claude Code, GitHub Copilot, Windsurf, Cline, Gemini CLI, Zed, and more — all with a single command.
 
-**What's new in v1.1.0:** Quality scoring (`skills score`), repo auto-indexing (`skills submit-repo`), and a formal adapter pattern architecture.
+**What's new in v1.1.0:** Private Git repos (GitLab, Bitbucket, SSH, self-hosted), npm packages, `.skillsrc` config files, and automatic credential resolution.
 
 🌐 **Website:** [agentskills.in](https://agentskills.in)
 
@@ -23,6 +23,9 @@ skills install @anthropic/xlsx
 - **175,000+ Skills** — Access the largest collection of AI agent skills
 - **FZF Interactive Search** — Real-time search with keyboard navigation: `skills search -i`
 - **42 AI Agents** — Cursor, Claude, Copilot, Windsurf, Cline, Gemini CLI, Zed, and 35+ more
+- **Private Git Repos** — GitLab, Bitbucket, SSH, self-hosted Git with auto-auth: `skills install git@host:team/repo`
+- **npm Packages** — Install skills from npm registries: `skills install npm:@scope/package`
+- **`.skillsrc` Config** — Enterprise config files for custom registries, tokens, and defaults
 - **Quality Scoring** — 4-dimension skill scoring (0–100): `skills score`
 - **Repo Auto-Index** — Submit entire repos to the marketplace: `skills submit-repo owner/repo`
 - **Adapter Architecture** — Formal adapter pattern for clean multi-agent support
@@ -53,6 +56,14 @@ skills install @facebook/verify
 # ⭐ Install from a GitHub repo
 skills add vercel-labs/agent-skills
 
+# ⭐ Install from private Git (auto-detects credentials)
+skills install git@gitlab.com:team/internal-skills.git
+skills install https://git.company.com/team/skills --token $GIT_TOKEN
+
+# ⭐ Install from npm registry
+skills install npm:@company/skills
+skills install npm:@company/skills --registry https://npm.company.com
+
 # Install to specific platforms
 skills install @facebook/verify -a claude,cursor
 
@@ -79,9 +90,6 @@ skills update --all
 
 # Search and install skills interactively
 skills search python
-
-# Search with JSON output (non-interactive)
-skills search react --json
 ```
 
 ---
@@ -119,12 +127,46 @@ skills add @facebook/verify -a cursor     # 'add' is an alias for 'install'
 
 ```bash
 skills add owner/repo              # GitHub shorthand
-skills add owner/repo@skill-name   # NEW: Install specific skill directly
+skills add owner/repo@skill-name   # Install specific skill directly
 skills add https://github.com/user/repo  # Full URL
 skills add https://gitlab.com/org/repo   # GitLab
 skills add owner/repo --list       # List skills in repo
 skills add owner/repo -s skill-name      # Install specific skill
 skills add owner/repo -y -g        # Non-interactive, global
+```
+
+### Private Git Repos
+
+```bash
+# SSH (auto-detects SSH keys)
+skills install git@github.com:team/private-repo.git
+skills install git@gitlab.com:team/internal-skills.git
+
+# HTTPS with token
+skills install https://git.company.com/team/repo --token=xxx
+
+# Token from environment variable
+GITLAB_TOKEN=xxx skills install https://gitlab.com/team/repo
+BITBUCKET_TOKEN=xxx skills install https://bitbucket.org/team/repo
+
+# Bitbucket
+skills install https://bitbucket.org/team/skills-repo
+```
+
+**Auth resolution order:** `--token` flag → env vars (`GH_TOKEN`, `GITLAB_TOKEN`, `BITBUCKET_TOKEN`, `GIT_TOKEN`) → SSH keys → git credential helper → `.netrc`
+
+### npm Packages
+
+```bash
+# Public npm packages
+skills install npm:chalk
+skills install npm:@anthropic/skills
+
+# Scoped package with version
+skills install npm:@company/skills@1.1.1
+
+# Private npm registry
+skills install npm:@company/skills --registry https://npm.company.com
 ```
 
 ### Other Commands
@@ -175,16 +217,46 @@ skills submit-repo vercel-labs/agent-skills   # Skills appear on marketplace
 
 ---
 
-## 🔒 Privacy & Telemetry
+## ⚙️ Configuration (`.skillsrc`)
 
-The CLI collects anonymous usage data to improve the product. **No personal data is collected.**
+Create a `.skillsrc` or `.skillsrc.json` file in your project root or home directory to configure private sources and defaults:
 
-```bash
-# Opt out of telemetry
-export DISABLE_TELEMETRY=1
-# or
-export DO_NOT_TRACK=1
+```json
+{
+  "sources": [
+    {
+      "name": "company-gitlab",
+      "type": "git",
+      "url": "https://gitlab.company.com",
+      "auth_env": "COMPANY_GIT_TOKEN"
+    },
+    {
+      "name": "company-npm",
+      "type": "npm",
+      "registry": "https://npm.company.com",
+      "scope": "@company"
+    }
+  ],
+  "defaults": {
+    "agent": "cursor",
+    "global": false
+  }
+}
 ```
+
+Config is loaded from: project `.skillsrc` → home `~/.skillsrc` (first found wins).
+
+---
+
+## 🔐 Environment Variables
+
+| Variable | Purpose |
+|----------|---------|  
+| `GH_TOKEN` / `GITHUB_TOKEN` | GitHub private repo authentication |
+| `GITLAB_TOKEN` / `GL_TOKEN` | GitLab private repo authentication |
+| `BITBUCKET_TOKEN` / `BB_TOKEN` | Bitbucket private repo authentication |
+| `GIT_TOKEN` | Generic Git authentication (any host) |
+| `DISABLE_TELEMETRY` / `DO_NOT_TRACK` | Opt out of anonymous telemetry |
 
 Telemetry is automatically disabled in CI environments.
 
