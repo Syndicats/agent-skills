@@ -7,7 +7,7 @@
 
 Install skills from the world's largest marketplace and sync them to **42 AI agents** including Cursor, Claude Code, GitHub Copilot, Windsurf, Cline, Gemini CLI, Zed, and more — all with a single command.
 
-**What's new in v1.1.3:** Smart skill discovery (deep recursive search), interactive skill selection for multi-skill repos, and `@owner/repo` marketplace fallback to GitHub clone.
+**What's new in v1.1.4:** 10 unique power-tools — conflict detection (`doctor --deep`), context budget planner (`budget`), skill diff, frozen installs, skill compose, testing framework, sandbox preview, watch mode, skill splitter, and benchmarking.
 
 🌐 **Website:** [agentskills.in](https://agentskills.in)
 
@@ -21,19 +21,24 @@ skills install @anthropic/xlsx
 ## ✨ Features
 
 - **175,000+ Skills** — Access the largest collection of AI agent skills
-- **FZF Interactive Search** — Real-time search with keyboard navigation: `skills search -i`
 - **42 AI Agents** — Cursor, Claude, Copilot, Windsurf, Cline, Gemini CLI, Zed, and 35+ more
-- **Private Git Repos** — GitLab, Bitbucket, SSH, self-hosted Git with auto-auth: `skills install git@host:team/repo`
-- **npm Packages** — Install skills from npm registries: `skills install npm:@scope/package`
+- **FZF Interactive Search** — Real-time search with keyboard navigation: `skills search -i`
+- **Conflict Detection** — Find contradictions and overlaps across skills: `skills doctor --deep`
+- **Context Budget** — Smart token-aware skill selection for your project: `skills budget -b 8000`
+- **Skill Diff** — Section-aware comparison of two skills: `skills diff A B`
+- **Frozen Installs** — Deterministic lockfile-based installs (like `npm ci`): `skills frozen`
+- **Skill Compose** — Merge, chain, or conditionally combine skills: `skills compose A B -o C`
+- **Skill Testing** — 10 built-in quality assertions + custom tests: `skills test --all`
+- **Sandbox Preview** — Quality + conflicts check before install: `skills sandbox @owner/repo`
+- **Watch Mode** — Auto-sync skills to agents on file changes: `skills watch`
+- **Skill Splitter** — Split large skills into focused sub-skills: `skills split my-skill`
+- **Benchmarking** — Compare skill quality across your collection: `skills bench --all`
+- **Private Git Repos** — GitLab, Bitbucket, SSH, self-hosted Git: `skills install git@host:team/repo`
+- **npm Packages** — Install from npm registries: `skills install npm:@scope/package`
 - **`.skillsrc` Config** — Enterprise config files for custom registries, tokens, and defaults
 - **Quality Scoring** — 4-dimension skill scoring (0–100): `skills score`
-- **Repo Auto-Index** — Submit entire repos to the marketplace: `skills submit-repo owner/repo`
-- **Adapter Architecture** — Formal adapter pattern for clean multi-agent support
 - **Lock File Tracking** — Track all installations in `~/.skills/skills.lock`
-- **Git URL Support** — Install from GitHub, GitLab, or repos: `skills add owner/repo@skill`
 - **Platform Targeting** — Install to specific platforms with `-t claude,cursor`
-- **Update & Remove** — Full lifecycle: `skills update`, `skills check`, `skills remove`
-- **Privacy-First Telemetry** — Anonymous usage tracking with opt-out
 
 ---
 
@@ -109,7 +114,21 @@ skills search python
 | `skills remove` | Remove installed skills (interactive multi-select) |
 | `skills score [path]` | Score skill quality (0–100, grades F–A) |
 | `skills submit-repo <repo>` | Submit a GitHub repo for marketplace auto-indexing |
-| `skills doctor` | Diagnose issues |
+| `skills doctor` | Diagnose issues (`--deep` for conflict detection) |
+
+### Power Tools (v1.1.4)
+
+| Command | Description |
+|---------|-------------|
+| `skills budget -b <tokens>` | Smart context budget — load only relevant skills within limit |
+| `skills diff <A> <B>` | Section-aware skill comparison |
+| `skills compose <skills...>` | Merge/chain/conditional skill composition |
+| `skills test [skills...]` | Run quality assertions against skills |
+| `skills frozen` | Deterministic install from lockfile |
+| `skills sandbox <source>` | Preview skill quality + conflicts before installing |
+| `skills watch [dir]` | Auto-sync skills to agents on file changes |
+| `skills split <skill>` | Split large skills into focused sub-skills |
+| `skills bench [skills...]` | Benchmark and compare skill quality |
 
 ### Install Options
 

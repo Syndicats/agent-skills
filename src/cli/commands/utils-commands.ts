@@ -12,6 +12,7 @@ export function registerDoctorCommand(program: Command) {
         .command('doctor')
         .description('Diagnose installation and configuration issues')
         .option('-f, --fix', 'Attempt to fix issues automatically')
+        .option('-d, --deep', 'Run deep conflict detection across installed skills')
         .action(async (options) => {
             try {
                 const { existsSync } = await import('fs');
@@ -86,6 +87,7 @@ export function registerDoctorCommand(program: Command) {
                 }
 
                 // Check 6: Installed skills have valid SKILL.md
+                const skillDirs: string[] = [];
                 if (existsSync(skillsDir)) {
                     const entries = await readdir(skillsDir, { withFileTypes: true });
                     const skillCount = entries.filter(e => e.isDirectory()).length;
@@ -93,8 +95,12 @@ export function registerDoctorCommand(program: Command) {
 
                     for (const entry of entries) {
                         if (entry.isDirectory()) {
-                            const skillMd = join(skillsDir, entry.name, 'SKILL.md');
-                            if (existsSync(skillMd)) validCount++;
+                            const skillPath = join(skillsDir, entry.name);
+                            const skillMd = join(skillPath, 'SKILL.md');
+                            if (existsSync(skillMd)) {
+                                validCount++;
+                                skillDirs.push(skillPath);
+                            }
                         }
                     }
 
@@ -117,6 +123,64 @@ export function registerDoctorCommand(program: Command) {
                     if (check.status !== 'pass') hasIssues = true;
                 }
 
+                // ── Deep conflict detection ─────────────────────────────────
+                if (options.deep) {
+                    console.log(chalk.bold('\n🔍 Deep Conflict Analysis\n'));
+
+                    if (skillDirs.length < 2) {
+                        console.log(chalk.gray('  Need at least 2 installed skills to detect conflicts.\n'));
+                    } else {
+                        const spinner = ora('Analyzing skills for conflicts...').start();
+                        try {
+                            const { detectConflicts } = await import('../../core/conflict-detector.js');
+                            const result = await detectConflicts(skillDirs);
+                            spinner.stop();
+
+                            // Show conflicts
+                            if (result.conflicts.length > 0) {
+                                console.log(chalk.red(`  Found ${result.conflicts.length} conflict(s):\n`));
+                                for (const conflict of result.conflicts) {
+                                    const icon = conflict.severity === 'critical'
+                                        ? chalk.red('✗')
+                                        : chalk.yellow('⚠');
+                                    console.log(`  ${icon} ${chalk.bold(conflict.category.toUpperCase())}: ${conflict.description}`);
+                                    console.log(`    ${chalk.cyan(conflict.skillA)}: ${chalk.gray(conflict.lineA)}`);
+                                    console.log(`    ${chalk.cyan(conflict.skillB)}: ${chalk.gray(conflict.lineB)}`);
+                                    console.log('');
+                                }
+                            } else {
+                                console.log(chalk.green('  ✓ No conflicting instructions found.\n'));
+                            }
+
+                            // Show overlaps
+                            if (result.overlaps.length > 0) {
+                                console.log(chalk.yellow(`  Found ${result.overlaps.length} topic overlap(s):\n`));
+                                for (const overlap of result.overlaps) {
+                                    console.log(`  ${chalk.yellow('⚠')} ${chalk.bold(overlap.topic)}`);
+                                    console.log(`    Skills: ${overlap.skills.map(s => chalk.cyan(s)).join(', ')}`);
+                                    console.log(`    Est. wasted tokens: ${chalk.yellow(String(overlap.tokenWaste))}`);
+                                    console.log('');
+                                }
+                            } else {
+                                console.log(chalk.green('  ✓ No topic overlaps found.\n'));
+                            }
+
+                            // Summary
+                            const { summary } = result;
+                            if (summary.total > 0) {
+                                console.log(chalk.bold('  Summary:'));
+                                if (summary.critical > 0) console.log(`    ${chalk.red('✗')} ${summary.critical} critical conflict(s)`);
+                                if (summary.warnings > 0) console.log(`    ${chalk.yellow('⚠')} ${summary.warnings} warning(s)`);
+                                if (summary.overlapCount > 0) console.log(`    ${chalk.yellow('⚠')} ${summary.overlapCount} overlap(s) (~${summary.estimatedTokenWaste} wasted tokens)`);
+                                console.log('');
+                            }
+                        } catch (err: any) {
+                            spinner.fail('Conflict analysis failed');
+                            console.error(chalk.red(`  ${err.message || err}`));
+                        }
+                    }
+                }
+
                 // Fix issues if requested
                 if (options.fix && hasIssues) {
                     console.log(chalk.cyan('\n🔧 Attempting fixes...\n'));
@@ -132,10 +196,14 @@ export function registerDoctorCommand(program: Command) {
                     }
                 }
 
-                if (!hasIssues) {
+                if (!hasIssues && !options.deep) {
                     console.log(chalk.green('\n✓ All checks passed!\n'));
-                } else if (!options.fix) {
+                } else if (!options.fix && !options.deep) {
                     console.log(chalk.gray('\nRun with --fix to attempt automatic fixes.\n'));
+                }
+
+                if (!options.deep) {
+                    console.log(chalk.gray('  Tip: Run with --deep to detect skill conflicts and overlaps.\n'));
                 }
                 console.log('');
             } catch (error) {

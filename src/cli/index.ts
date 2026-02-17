@@ -57,6 +57,17 @@ import { registerScoreCommand } from './commands/score.js';
 import { registerSubmitRepoCommand } from './commands/submit-repo.js';
 import { registerMethodCommand } from './commands/method.js';
 
+// ─── v1.1.4 Unique Feature Commands ────────────────────────────────────────
+import { registerContextCommand } from './commands/context.js';
+import { registerDiffCommand } from './commands/diff.js';
+import { registerComposeCommand } from './commands/compose.js';
+import { registerTestCommand } from './commands/test.js';
+import { registerFrozenCommand } from './commands/frozen.js';
+import { registerSandboxCommand } from './commands/sandbox.js';
+import { registerWatchCommand } from './commands/watch.js';
+import { registerSplitCommand } from './commands/split.js';
+import { registerBenchCommand } from './commands/bench.js';
+
 // ─── Program setup ─────────────────────────────────────────────────────────
 
 const program = new Command();
@@ -291,5 +302,16 @@ registerInsightCommand(program);
 registerMethodCommand(program);
 registerScoreCommand(program);
 registerSubmitRepoCommand(program);
+
+// v1.1.4 — Unique features
+registerContextCommand(program);
+registerDiffCommand(program);
+registerComposeCommand(program);
+registerTestCommand(program);
+registerFrozenCommand(program);
+registerSandboxCommand(program);
+registerWatchCommand(program);
+registerSplitCommand(program);
+registerBenchCommand(program);
 
 program.parse();

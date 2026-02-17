@@ -241,3 +241,70 @@ export type {
     ScoreDetail,
 } from './quality.js';
 
+// Conflict Detector (v1.1.4)
+export {
+    detectConflicts,
+} from './conflict-detector.js';
+
+export type {
+    Conflict,
+    Overlap,
+    ConflictResult,
+} from './conflict-detector.js';
+
+// Context Budget Manager (v1.1.4)
+export {
+    buildContextPlan,
+    formatContextXML,
+    formatContextJSON,
+} from './context-budget.js';
+
+export type {
+    SkillWithRelevance,
+    ContextPlan,
+    ContextOptions,
+} from './context-budget.js';
+
+// Skill Differ (v1.1.4)
+export {
+    diffSkills,
+} from './differ.js';
+
+export type {
+    SectionDiff,
+    DiffResult,
+} from './differ.js';
+
+// Skill Composer (v1.1.4)
+export {
+    composeSkills,
+} from './composer.js';
+
+export type {
+    ComposeStrategy,
+    ComposeOptions,
+    ComposedSkill,
+} from './composer.js';
+
+// Skill Tester (v1.1.4)
+export {
+    testSkill,
+    testSkills,
+} from './skill-tester.js';
+
+export type {
+    SkillTest,
+    TestResult,
+    AssertionResult,
+} from './skill-tester.js';
+
+// Skill Splitter (v1.1.4)
+export {
+    splitSkill,
+} from './splitter.js';
+
+export type {
+    SplitSkill,
+    SplitResult,
+} from './splitter.js';
+

@@ -2,6 +2,100 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.4] - 2026-02-17
+
+### 🔍 Skill Conflict Detector (`doctor --deep`)
+- Deep conflict analysis integrated into the `doctor` command
+- **3 detection strategies** (no LLM required):
+  - **Keyword Contradiction** — Detects conflicting instructions across skills (e.g., "use tabs" vs "use spaces")
+  - **Topic Overlap** — Jaccard similarity on section headings to find duplicate coverage
+  - **Rule Extraction** — Extracts imperative instructions and compares across skills
+- Estimates wasted tokens from redundant skill overlap
+- Usage: `skills doctor --deep`
+
+### 📊 Context Budget Manager (`budget`)
+- Smart context budget planner — loads only the most relevant skills within a token limit
+- **4-signal relevance scoring** (0–100, no LLM):
+  1. File extension matching (project files → skill language keywords)
+  2. Dependency matching (package.json, requirements.txt, Cargo.toml)
+  3. Keyword density (skill body vs project file names)
+  4. Description match against all project signals
+- Greedy selection algorithm fits highest-relevance skills first
+- Output formats: text (with visual bars), XML (agent-ready), JSON (machine-readable)
+- Usage: `skills budget -b 8000`, `skills budget -b 4000 --format xml`
+
+### 📊 Skill Diff (`diff`)
+- Section-aware diff engine for comparing two skills side by side
+- Parses SKILL.md into sections by heading, compares:
+  - **Added sections** (only in skill B)
+  - **Removed sections** (only in skill A)
+  - **Changed sections** (with line delta preview)
+- Reports token delta between skills
+- Usage: `skills diff frontend-design frontend-code-review`
+
+### ❄️ Frozen Installs (`frozen`)
+- Deterministic skill installation from the lockfile (like `npm ci`)
+- **Verify mode** — checks whether installed skills match lockfile entries: `skills frozen --verify`
+- **Restore mode** — re-clones skills from their recorded Git sources with pinned versions
+- **Strict mode** — aborts on first failure: `skills frozen --strict`
+- Supports `github`, `private-git`, and `local` source types
+
+### 🧩 Skill Compose (`compose`)
+- Combine multiple skills into a single "super-skill"
+- **3 composition strategies:**
+  - `merge` — Combines all sections, deduplicates similar lines (default)
+  - `chain` — Sequences skills with ordered phase markers
+  - `conditional` — Wraps each skill in a conditional activation block
+- Auto-saves composed skill: `skills compose A B -o combined --save`
+- Usage: `skills compose frontend-design frontend-code-review -o combined-frontend`
+
+### 🧪 Skill Testing (`test`)
+- 10 built-in quality assertions across 3 categories:
+  - **Structure:** SKILL.md exists, valid frontmatter, has name, has description
+  - **Content:** has sections (headings), has code examples, has "when to use" section
+  - **Quality:** concise description (<200 chars), no TODO/FIXME/placeholder, minimum content length
+- Custom tests via `skill-test.yml` files in skill directories
+- CI-ready: exits with code 1 on any failure
+- Usage: `skills test frontend-design`, `skills test --all --verbose`
+
+### 🧪 Sandbox Preview (`sandbox`)
+- Preview a skill's quality, conflicts, and token impact **before** installing
+- Combines quality scoring + conflict detection + token analysis in one command
+- Supports local paths and remote GitHub repos (`@owner/repo`)
+- Shows letter grade (A–F), failed assertions, and overlap analysis
+- Usage: `skills sandbox ~/.antigravity/skills/my-skill`, `skills sandbox @owner/repo`
+
+### 👁️ Watch Mode (`watch`)
+- Watches skill directories for changes and auto-syncs to all agent directories
+- Uses Node.js built-in `fs.watch` (no additional dependencies)
+- Debounced file watching (configurable, default 500ms)
+- Syncs to all 40+ agent directories on each change
+- Usage: `skills watch`, `skills watch ./my-skills --agent cursor,claude`
+
+### ✂️ Skill Splitter (`split`)
+- Splits monolithic skills into focused sub-skills by topic clustering
+- **10 topic categories:** setup, coding-style, testing, architecture, deployment, security, api, database, documentation, performance
+- Groups sections by keyword assignment, generates frontmatter for each sub-skill
+- Dry-run mode and auto-save support
+- Usage: `skills split skill-creator --dry-run`, `skills split big-skill --save ./output`
+
+### 📈 Skill Benchmarking (`bench`)
+- Benchmark and compare skills by quality, size, and coverage
+- **Quality scoring** (0–100) based on:
+  - Frontmatter completeness, section count, code blocks, examples, instructions
+  - Appropriate token count range, absence of TODOs/FIXMEs
+- Table visualization with quality bars and emoji feature indicators (📝 💡 📋)
+- Sortable by quality, tokens, or name; filterable by minimum quality
+- Usage: `skills bench --all`, `skills bench frontend-design pdf --sort tokens`
+
+### 🏗️ Integration
+- 9 new commands registered in CLI entry point
+- 6 new core modules exported from `src/core/index.ts`
+- **Zero new npm dependencies** — all features use Node.js built-in APIs
+- TypeScript build passes with zero errors
+
+---
+
 ## [1.1.3] - 2026-02-13
 
 ### 🔍 Smart Skill Discovery & Selection
