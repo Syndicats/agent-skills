@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.5] - 2026-02-20
+
+### Non-Interactive Bulk Install (`-y` flag)
+- The `-y` / `--yes` flag now skips the skill selection prompt when installing from a repo
+- Installs ALL found skills automatically without any interactive prompt
+- Works with both `install` and `add` commands
+- Usage:
+  ```bash
+  skills install @ComposioHQ/awesome-claude-skills -a claude -y
+  skills add github/awesome-copilot -a cursor,claude -y
+  skills install @owner/repo --all -y
+  ```
+
 ## [1.1.4] - 2026-02-17
 
 ### 🔍 Skill Conflict Detector (`doctor --deep`)

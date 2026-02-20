@@ -7,7 +7,7 @@
 
 Install skills from the world's largest marketplace and sync them to **42 AI agents** including Cursor, Claude Code, GitHub Copilot, Windsurf, Cline, Gemini CLI, Zed, and more — all with a single command.
 
-**What's new in v1.1.4:** 10 unique power-tools — conflict detection (`doctor --deep`), context budget planner (`budget`), skill diff, frozen installs, skill compose, testing framework, sandbox preview, watch mode, skill splitter, and benchmarking.
+**What's new in v1.1.5:** Non-interactive bulk install — use `-y` to install all skills from any repo without prompts: `skills install @ComposioHQ/awesome-claude-skills -a claude -y`
 
 🌐 **Website:** [agentskills.in](https://agentskills.in)
 
@@ -140,6 +140,11 @@ skills install @facebook/verify --all     # Install to all 42 agents
 skills install pdf -g -a claude           # Install globally (~/.claude/skills/)
 skills install -s verify -a cursor        # Install by skill name
 skills add @facebook/verify -a cursor     # 'add' is an alias for 'install'
+
+# Bulk install all skills from a repo (no prompts)
+skills install @ComposioHQ/awesome-claude-skills -a claude -y
+skills install @github/awesome-copilot -a cursor,claude -y
+skills install @owner/repo --all -y        # All skills to all agents
 ```
 
 ### Git URL Install (`skills add`)
@@ -152,6 +157,7 @@ skills add https://gitlab.com/org/repo   # GitLab
 skills add owner/repo --list       # List skills in repo
 skills add owner/repo -s skill-name      # Install specific skill
 skills add owner/repo -y -g        # Non-interactive, global
+skills add owner/repo -a claude -y # Install ALL skills to claude (no prompt)
 ```
 
 ### Private Git Repos

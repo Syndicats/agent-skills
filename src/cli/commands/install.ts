@@ -508,7 +508,7 @@ export function registerInstallCommand(program: Command) {
                     }
 
                     // Interactive skill selection when multiple skills found
-                    if (skillDirs.length > 1) {
+                    if (skillDirs.length > 1 && !options.yes) {
                         const { relative } = await import('path');
                         const skillChoices = skillDirs.map(d => ({
                             label: basename(d),
@@ -536,6 +536,8 @@ export function registerInstallCommand(program: Command) {
                         if (!selectedValues.includes('__all__')) {
                             skillDirs = selectedValues;
                         }
+                    } else if (skillDirs.length > 1 && options.yes) {
+                        console.log(chalk.cyan(`ℹ Installing all ${skillDirs.length} skills (--yes flag)`));
                     }
 
                     const repoName = parsed.url.split('/').pop()?.replace('.git', '') || 'skill';
