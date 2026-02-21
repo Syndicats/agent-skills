@@ -7,7 +7,7 @@
 
 Install skills from the world's largest marketplace and sync them to **42 AI agents** including Cursor, Claude Code, GitHub Copilot, Windsurf, Cline, Gemini CLI, Zed, and more — all with a single command.
 
-**What's new in v1.1.5:** Non-interactive bulk install — use `-y` to install all skills from any repo without prompts: `skills install @ComposioHQ/awesome-claude-skills -a claude -y`
+**What's new in v1.1.6:** Search overhaul — multi-select skills with spacebar, bulk install with `-y`, and new `-a`/`-g` flags: `skills search python -a claude -y`
 
 🌐 **Website:** [agentskills.in](https://agentskills.in)
 
@@ -93,8 +93,14 @@ skills check
 # Update skills from source
 skills update --all
 
-# Search and install skills interactively
+# Search and install skills interactively (multi-select)
 skills search python
+
+# Search + auto-install all results to an agent
+skills search python -a claude -y
+
+# Search + install to specific agents
+skills search react -a cursor claude
 ```
 
 ---
@@ -107,8 +113,9 @@ skills search python
 |---------|-------------|
 | `skills install <name>` | Install a skill from marketplace |
 | `skills add <source>` | Install from Git repo (owner/repo or URL) |
-| `skills search <query>` | Search and install skills interactively |
+| `skills search <query>` | Search and install skills (multi-select) |
 | `skills search -i` | FZF-style interactive search with keyboard navigation |
+| `skills search <query> -a <agent> -y` | Search and bulk-install all results to an agent |
 | `skills check` | Check installed skills with source and version info |
 | `skills update` | Update skills from their source repos |
 | `skills remove` | Remove installed skills (interactive multi-select) |

@@ -16,7 +16,7 @@ async function installSkillFromDatabase(skill: any, targetDir: string): Promise<
         const result = await installFromGitHubUrl(githubUrl, targetDir);
         return result.path;
     }
-    throw new Error(`No GitHub URL found for skill ${skill.name}`);
+    throw new Error(`No GitHub URL found for skill ${skill.name || skill.scopedName || 'unknown'}`);
 }
 
 export function registerSearchInstallCommand(program: Command) {
@@ -27,6 +27,9 @@ export function registerSearchInstallCommand(program: Command) {
         .option('-l, --limit <n>', 'Maximum results to show', '20')
         .option('-s, --sort <by>', 'Sort by: stars, recent, name', 'stars')
         .option('-i, --interactive', 'Launch interactive FZF-style search')
+        .option('-a, --agent <agents...>', 'Specify agents to install to (e.g. -a claude cursor)')
+        .option('-g, --global', 'Install globally (user-wide)')
+        .option('-y, --yes', 'Skip confirmation prompts')
         .option('--json', 'Output as JSON for scripting (no interactive prompt)')
         .action(async (queryParts, options) => {
             try {
@@ -70,125 +73,157 @@ export function registerSearchInstallCommand(program: Command) {
 
                 console.log(chalk.bold(`\n🔍 ${total.toLocaleString()} skills found${query ? ` for "${query}"` : ''}\n`));
 
-                // Display results with install option
-                const choices = skills.map((skill: any, i: number) => {
-                    const stars = skill.stars ? chalk.yellow(`⭐${skill.stars.toLocaleString()}`) : '';
-                    const desc = skill.description ? skill.description.slice(0, 50) : '';
-                    return {
-                        name: `${chalk.cyan(skill.scoped_name || skill.name)} ${stars}\n    ${chalk.gray(desc)}`,
-                        value: skill,
-                        short: skill.scoped_name || skill.name
-                    };
-                });
+                // Select skills — install all with -y, or show interactive checkbox
+                let selectedSkills: any[] = [];
 
-                choices.push({ name: chalk.gray('Skip'), value: null, short: 'Skip' } as any);
+                if (options.yes) {
+                    // Auto-select ALL results
+                    selectedSkills = skills;
+                    console.log(chalk.cyan(`  Auto-installing ${skills.length} skills...\n`));
+                } else {
+                    // Interactive checkbox (multi-select with spacebar, confirm with Enter)
+                    const choices = skills.map((skill: any) => {
+                        const stars = skill.stars ? chalk.yellow(`⭐${skill.stars.toLocaleString()}`) : '';
+                        const desc = skill.description ? skill.description.slice(0, 50) : '';
+                        return {
+                            name: `${chalk.cyan(skill.scopedName || skill.scoped_name || skill.name)} ${stars}  ${chalk.gray(desc)}`,
+                            value: skill,
+                            short: skill.scopedName || skill.scoped_name || skill.name,
+                            checked: false
+                        };
+                    });
 
-                const { selected } = await inquirer.prompt([{
-                    type: 'list',
-                    name: 'selected',
-                    message: 'Select skill to install (or skip):',
-                    choices,
-                    pageSize: 15
-                }]);
+                    const { picked } = await inquirer.prompt([{
+                        type: 'checkbox',
+                        name: 'picked',
+                        message: 'Select skills to install (space to select, enter to confirm):',
+                        choices,
+                        pageSize: 15
+                    }]);
+                    selectedSkills = picked;
+                }
 
-                if (!selected) return;
+                if (selectedSkills.length === 0) {
+                    console.log(chalk.gray('No skills selected.'));
+                    return;
+                }
 
-                // Select agents
-                const agentChoices = Object.entries(AGENTS).map(([key, config]: [string, AgentConfig]) => ({
-                    name: config.displayName,
-                    value: key,
-                    checked: key === 'cursor' || key === 'claude'
-                }));
+                // Determine agents — from -a flag or prompt
+                let agents: string[] = [];
+                if (options.agent) {
+                    const agentFlags = Array.isArray(options.agent) ? options.agent : [options.agent];
+                    for (const flag of agentFlags) {
+                        const matchedKey = Object.keys(AGENTS).find(k =>
+                            k.toLowerCase() === flag.toLowerCase() ||
+                            AGENTS[k].displayName.toLowerCase() === flag.toLowerCase()
+                        );
+                        if (matchedKey) {
+                            agents.push(matchedKey);
+                        } else {
+                            console.log(chalk.yellow(`Unknown agent: ${flag}`));
+                        }
+                    }
+                }
 
-                const { agents } = await inquirer.prompt([{
-                    type: 'checkbox',
-                    name: 'agents',
-                    message: 'Install to which agents?',
-                    choices: agentChoices
-                }]);
+                if (agents.length === 0) {
+                    const agentChoices = Object.entries(AGENTS).map(([key, config]: [string, AgentConfig]) => ({
+                        name: config.displayName,
+                        value: key,
+                        checked: key === 'cursor' || key === 'claude'
+                    }));
+
+                    const { selectedAgents } = await inquirer.prompt([{
+                        type: 'checkbox',
+                        name: 'selectedAgents',
+                        message: 'Install to which agents?',
+                        choices: agentChoices
+                    }]);
+                    agents = selectedAgents;
+                }
 
                 if (agents.length === 0) {
                     console.log(chalk.yellow('No agents selected.'));
                     return;
                 }
 
-                // Select scope
-                const { scope } = await inquirer.prompt([{
-                    type: 'list',
-                    name: 'scope',
-                    message: 'Install scope:',
-                    choices: [
-                        { name: 'Global (~/.agent/skills)', value: 'global' },
-                        { name: 'Project (.agent/skills)', value: 'project' }
-                    ]
-                }]);
+                // Determine scope — from -g flag or prompt
+                let isGlobal = false;
+                if (options.global !== undefined) {
+                    isGlobal = options.global;
+                } else if (!options.yes) {
+                    const { scope } = await inquirer.prompt([{
+                        type: 'list',
+                        name: 'scope',
+                        message: 'Install scope:',
+                        choices: [
+                            { name: 'Global (~/.agent/skills)', value: 'global' },
+                            { name: 'Project (.agent/skills)', value: 'project' }
+                        ]
+                    }]);
+                    isGlobal = scope === 'global';
+                }
 
-                const isGlobal = scope === 'global';
+                // Install all selected skills
+                const { addSkillToLock, createLockEntry } = await import('../../core/index.js');
+                let installed = 0;
+                let failed = 0;
 
-                // Install the skill
-                const installSpinner = ora(`Installing ${selected.scoped_name || selected.name}...`).start();
+                for (const skill of selectedSkills) {
+                    const skillName = skill.scopedName || skill.scoped_name || skill.name;
+                    const installSpinner = ora(`Installing ${skillName}... (${installed + failed + 1}/${selectedSkills.length})`).start();
 
-                try {
-                    const { addSkillToLock, createLockEntry } = await import('../../core/index.js');
+                    try {
+                        let installDir: string = '';
+                        const githubUrl = skill.github_url || skill.githubUrl;
+                        const rawUrl = skill.raw_url || skill.rawUrl;
 
-                    let installDir: string;
-                    if (selected.github_url || selected.raw_url) {
-                        // Install from GitHub URL
-                        const url = selected.github_url || selected.raw_url;
+                        if (githubUrl || rawUrl) {
+                            const url = githubUrl || rawUrl;
+                            for (const agent of agents) {
+                                const config = AGENTS[agent];
+                                const targetDir = isGlobal ? config.globalDir : config.projectDir;
+                                const result = await installFromGitHubUrl(url, targetDir);
+                                installDir = result.path;
+                            }
+                        } else {
+                            for (const agent of agents) {
+                                const config = AGENTS[agent];
+                                const targetDir = isGlobal ? config.globalDir : config.projectDir;
+                                installDir = await installSkillFromDatabase(skill, targetDir);
+                            }
+                        }
+
+                        // Add to lock file
+                        const lockEntry = createLockEntry({
+                            name: skill.name,
+                            scopedName: skillName,
+                            source: githubUrl || rawUrl || `database:${skill.name}`,
+                            sourceType: githubUrl ? 'github' : 'database',
+                            version: skill.version,
+                            agents,
+                            canonicalPath: installDir,
+                            isGlobal,
+                        });
+                        await addSkillToLock(lockEntry);
+
+                        installSpinner.succeed(`Installed ${skillName}`);
                         for (const agent of agents) {
                             const config = AGENTS[agent];
-                            const targetDir = isGlobal ? config.globalDir : config.projectDir;
-                            const { mkdir, cp, rm } = await import('fs/promises');
-                            const { tmpdir } = await import('os');
-                            const { join } = await import('path');
-                            const { exec } = await import('child_process');
-                            const { promisify } = await import('util');
-                            const execAsync = promisify(exec);
-
-                            const tempDir = join(tmpdir(), `skill-install-${Date.now()}`);
-                            await mkdir(tempDir, { recursive: true });
-                            await execAsync(`git clone --depth 1 ${url} .`, { cwd: tempDir });
-
-                            const skillName = selected.name || url.split('/').pop();
-                            const skillDir = join(targetDir, skillName);
-                            await mkdir(skillDir, { recursive: true });
-                            await cp(tempDir, skillDir, { recursive: true });
-                            await rm(tempDir, { recursive: true, force: true }).catch(() => { });
-
-                            installDir = skillDir;
+                            const dir = isGlobal ? config.globalDir : config.projectDir;
+                            console.log(chalk.gray(`  → ${config.displayName}: ${dir}/${skill.name}`));
                         }
-                    } else {
-                        // Database-based install
-                        for (const agent of agents) {
-                            const config = AGENTS[agent];
-                            const targetDir = isGlobal ? config.globalDir : config.projectDir;
-                            installDir = await installSkillFromDatabase(selected, targetDir);
-                        }
+                        installed++;
+                    } catch (err: any) {
+                        installSpinner.fail(`Failed to install ${skillName}: ${err.message || err}`);
+                        failed++;
                     }
+                }
 
-                    // Add to lock file
-                    const lockEntry = createLockEntry({
-                        name: selected.name,
-                        scopedName: selected.scoped_name || selected.name,
-                        source: selected.github_url || selected.raw_url || `database:${selected.name}`,
-                        sourceType: selected.github_url ? 'github' : 'database',
-                        version: selected.version,
-                        agents,
-                        canonicalPath: installDir!,
-                        isGlobal,
-                    });
-                    await addSkillToLock(lockEntry);
-
-                    installSpinner.succeed(`Installed ${selected.scoped_name || selected.name}`);
-
-                    for (const agent of agents) {
-                        const config = AGENTS[agent];
-                        const dir = isGlobal ? config.globalDir : config.projectDir;
-                        console.log(chalk.gray(`  → ${config.displayName}: ${dir}/${selected.name}`));
-                    }
+                // Summary
+                if (selectedSkills.length > 1) {
+                    console.log(chalk.bold(`\n📦 Done: ${installed} installed, ${failed} failed\n`));
+                } else {
                     console.log('');
-                } catch (err: any) {
-                    installSpinner.fail(`Failed to install: ${err.message || err}`);
                 }
             } catch (error) {
                 console.error(chalk.red('Error:'), error);

@@ -201,19 +201,20 @@ export async function fetchSkillsForCLI(options: {
     });
 
     // Convert DBSkill to MarketplaceCompatibleSkill
-    const skills: MarketplaceCompatibleSkill[] = result.skills.map(s => ({
+    // Handle both camelCase (API response) and snake_case (DBSkill interface) field names
+    const skills: MarketplaceCompatibleSkill[] = result.skills.map((s: any) => ({
         name: s.name,
         description: s.description || '',
         author: s.author,
         stars: s.stars || 0,
         forks: s.forks || 0,
-        githubUrl: s.github_url,
-        rawUrl: s.raw_url,
+        githubUrl: s.githubUrl || s.github_url || '',
+        rawUrl: s.rawUrl || s.raw_url || '',
         path: s.path,
         branch: s.branch || 'main',
-        scopedName: s.scoped_name,
-        hasAssets: s.has_assets,
-        authorAvatar: s.author_avatar
+        scopedName: s.scopedName || s.scoped_name || `@${s.author}/${s.name}`,
+        hasAssets: s.hasAssets ?? s.has_assets ?? false,
+        authorAvatar: s.authorAvatar || s.author_avatar || ''
     }));
 
     const hasNext = offset + skills.length < result.total;

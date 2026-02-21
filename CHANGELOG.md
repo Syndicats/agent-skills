@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.6] - 2026-02-21
+
+### 🔍 Search Command Overhaul (`search`)
+- **Multi-select installation** — Interactive checkbox prompt (spacebar to select, enter to confirm) replaces the old single-select list
+- **Bulk install with `-y`** — `skills search python -a claude -y` installs ALL matching skills automatically
+- **New `-a/--agent` flag** — Specify target agents directly: `skills search react -a cursor claude`
+- **New `-g/--global` flag** — Install search results globally: `skills search python -g`
+- **Progress counter** — Shows `(3/20)` during batch installs with per-skill success/failure
+- **Summary report** — `📦 Done: 20 installed, 0 failed` after bulk operations
+- Usage:
+  ```bash
+  skills search python                    # Multi-select, pick skills with spacebar
+  skills search react -a claude -y        # Bulk install all results to Claude
+  skills search typescript -a cursor -g   # Install globally to Cursor
+  ```
+
+### 🐛 Search Install Bug Fixes
+- Fixed "No GitHub URL found for skill undefined" — API field name mismatch (`githubUrl` vs `github_url`)
+- Fixed `git clone` failing on subdirectory URLs — now uses `installFromGitHubUrl` which fetches SKILL.md directly
+- Fixed scope prompt appearing unnecessarily — removed the install scope prompt
+- Unified camelCase/snake_case field handling in `fetchSkillsForCLI`
+
 ## [1.1.5] - 2026-02-20
 
 ### Non-Interactive Bulk Install (`-y` flag)
