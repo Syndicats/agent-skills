@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.7] - 2026-02-27
+
+### 🔎 Glob/Wildcard `--skill` Matching
+- **Pattern matching** — `skills install owner/repo --skill 'core-*'` installs all skills matching the glob
+- **Marketplace glob** — `skills install -s 'python-*' -a claude` searches marketplace and installs all matches
+- **New `--dry-run` flag** — Preview matched skills without installing: `skills install owner/repo --skill 'test-?' --dry-run`
+- Supports `*` (any characters) and `?` (single character) patterns
+
+### 🧹 Prune Stale Skills (`--prune`)
+- **New `--prune` flag** on `skills update` — Detects skills whose source path no longer exists in the repo
+- Removes stale skills from both disk and lock file
+- Respects `--global` scope filter
+- Usage: `skills update --all --prune`
+
+### 🌿 Branch `#suffix` for SSH/Shorthand URLs
+- **Branch targeting** — `owner/repo#dev` now clones the `dev` branch
+- **SSH support** — `git@github.com:owner/repo.git#feature` targets the `feature` branch
+- HTTP URLs unaffected (they use `/tree/branch` path convention)
+
+### 🤖 3 New Agents (45 total)
+- **Lingma** — `.lingma/skills`
+- **Deep Agents** — `.deepagents/skills`
+- **Ruler** — `.ruler/skills`
+
 ## [1.1.6] - 2026-02-21
 
 ### 🔍 Search Command Overhaul (`search`)
@@ -243,9 +267,9 @@ All notable changes to this project will be documented in this file.
 - `skills add @facebook/verify -a cursor` works identically to `skills install @facebook/verify -a cursor`
 - Both commands support all the same options: `-a`, `--all`, `-g`, `-s`, `-y`
 
-### 🌐 `--all` Flag — Install to All 42 Agents
+### 🌐 `--all` Flag — Install to All 45 Agents
 - New `--all` flag installs a skill to every supported agent in one command
-- Example: `skills install @facebook/verify --all` → installs to all 42 agents
+- Example: `skills install @facebook/verify --all` → installs to all 45 agents
 - Works with all install sources: marketplace, GitHub repos, local directories
 
 ### 🎯 `@scoped/name` Install Fix
@@ -254,7 +278,7 @@ All notable changes to this project will be documented in this file.
 - Now correctly parses `@author/skillname`, queries the database, and installs via the skill's GitHub URL
 
 ### 📤 Standardized Export Directory Structure
-- All 42 agents now export to the unified `.agentname/skills/skillname/SKILL.md` format
+- All 45 agents now export to the unified `.agentname/skills/skillname/SKILL.md` format
 - Removed legacy hardcoded formats (`.cursorrules`, single merged `.md` files)
 - `export.ts` rewritten to dynamically support all agents from the `AGENTS` config
 - Added `--list-agents` flag to show all 42 supported agents

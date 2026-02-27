@@ -50,6 +50,7 @@ export function registerInstallCommand(program: Command) {
         .option('-y, --yes', 'Skip confirmation prompts')
         .option('--token <token>', 'Authentication token for private Git repos')
         .option('--registry <url>', 'npm registry URL (for npm: sources)')
+        .option('--dry-run', 'Show matched skills without installing')
         .action(async (source, options) => {
             try {
                 const { mkdir, cp, rm, readdir, readFile } = await import('fs/promises');
@@ -162,53 +163,127 @@ export function registerInstallCommand(program: Command) {
                     return;
                 }
 
-                // Install by marketplace name(s) using -s flag
-                if (options.skill && options.skill.length > 0) {
-                    const skillNames = options.skill;
+                // Install by marketplace name(s) using -s flag (supports glob patterns)
+                // Only use marketplace path when no source URL is provided
+                if (options.skill && options.skill.length > 0 && !source) {
+                    const skillNames: string[] = options.skill;
+
+                    // Helper: check if a pattern is a glob
+                    const isGlobPattern = (s: string) => s.includes('*') || s.includes('?');
+                    // Simple glob matcher (supports * and ? without external dependency)
+                    const globMatch = (pattern: string, str: string): boolean => {
+                        const regex = new RegExp(
+                            '^' + pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&')
+                                .replace(/\*/g, '.*')
+                                .replace(/\?/g, '.') + '$',
+                            'i'
+                        );
+                        return regex.test(str);
+                    };
 
                     for (const skillName of skillNames) {
-                        const spinner = ora(`Searching for ${skillName}...`).start();
-                        try {
-                            // Try exact match first
-                            let skill = await getSkillByScoped(skillName);
+                        const isGlob = isGlobPattern(skillName);
 
-                            if (!skill) {
-                                // Search by name
-                                const result = await fetchSkillsForCLI({ search: skillName, limit: 1, sortBy: 'stars' });
-                                if (result.skills.length > 0) {
-                                    skill = result.skills[0] as any;
+                        if (isGlob) {
+                            // Glob: search marketplace and filter matches
+                            const baseQuery = skillName.replace(/[*?]/g, '').trim();
+                            const spinner = ora(`Searching for skills matching "${skillName}"...`).start();
+                            try {
+                                const result = await fetchSkillsForCLI({ search: baseQuery || 'a', limit: 100, sortBy: 'stars' });
+                                const matches = result.skills.filter((s: any) =>
+                                    globMatch(skillName, s.name) || globMatch(skillName, s.scopedName || '')
+                                );
+
+                                if (matches.length === 0) {
+                                    spinner.fail(`No skills matching pattern: ${skillName}`);
+                                    continue;
                                 }
+
+                                spinner.succeed(`Found ${matches.length} skill(s) matching "${skillName}"`);
+
+                                // Dry run: just list matches
+                                if (options.dryRun) {
+                                    for (const m of matches) {
+                                        console.log(chalk.cyan(`  ${(m as any).scopedName || m.name}`));
+                                    }
+                                    continue;
+                                }
+
+                                // Install all matches
+                                for (const skill of matches) {
+                                    const sSpinner = ora(`Installing ${(skill as any).scopedName || skill.name}...`).start();
+                                    try {
+                                        for (const agent of agents) {
+                                            const config = AGENTS[agent];
+                                            const targetDir = isGlobal ? config.globalDir : config.projectDir;
+                                            await installSkillFromDatabase(skill as any, targetDir);
+                                        }
+                                        const lockEntry = createLockEntry({
+                                            name: skill.name,
+                                            scopedName: (skill as any).scoped_name || (skill as any).scopedName || skill.name,
+                                            source: (skill as any).github_url || (skill as any).githubUrl || `database:${skill.name}`,
+                                            sourceType: (skill as any).github_url || (skill as any).githubUrl ? 'github' : 'database',
+                                            version: (skill as any).version,
+                                            agents,
+                                            canonicalPath: isGlobal ? AGENTS[agents[0]].globalDir : AGENTS[agents[0]].projectDir,
+                                            isGlobal,
+                                        });
+                                        await addSkillToLock(lockEntry);
+                                        sSpinner.succeed(`Installed ${(skill as any).scopedName || skill.name}`);
+                                    } catch (err: any) {
+                                        sSpinner.fail(`${(skill as any).scopedName || skill.name}: ${err.message}`);
+                                    }
+                                }
+                            } catch (err: any) {
+                                spinner.fail(`Search failed: ${err.message}`);
                             }
+                        } else {
+                            // Exact match (existing behavior)
+                            const spinner = ora(`Searching for ${skillName}...`).start();
+                            try {
+                                let skill = await getSkillByScoped(skillName);
 
-                            if (!skill) {
-                                spinner.fail(`Skill not found: ${skillName}`);
-                                continue;
+                                if (!skill) {
+                                    const result = await fetchSkillsForCLI({ search: skillName, limit: 1, sortBy: 'stars' });
+                                    if (result.skills.length > 0) {
+                                        skill = result.skills[0] as any;
+                                    }
+                                }
+
+                                if (!skill) {
+                                    spinner.fail(`Skill not found: ${skillName}`);
+                                    continue;
+                                }
+
+                                if (options.dryRun) {
+                                    spinner.succeed(`Found: ${(skill as any).scoped_name || skill.name}`);
+                                    continue;
+                                }
+
+                                spinner.text = `Installing ${(skill as any).scoped_name || skill.name}...`;
+
+                                for (const agent of agents) {
+                                    const config = AGENTS[agent];
+                                    const targetDir = isGlobal ? config.globalDir : config.projectDir;
+                                    await installSkillFromDatabase(skill as any, targetDir);
+                                }
+
+                                const lockEntry = createLockEntry({
+                                    name: skill.name,
+                                    scopedName: (skill as any).scoped_name || skill.name,
+                                    source: (skill as any).github_url || `database:${skill.name}`,
+                                    sourceType: (skill as any).github_url ? 'github' : 'database',
+                                    version: (skill as any).version,
+                                    agents,
+                                    canonicalPath: isGlobal ? AGENTS[agents[0]].globalDir : AGENTS[agents[0]].projectDir,
+                                    isGlobal,
+                                });
+                                await addSkillToLock(lockEntry);
+
+                                spinner.succeed(`Installed ${(skill as any).scoped_name || skill.name}`);
+                            } catch (err: any) {
+                                spinner.fail(`${skillName}: ${err.message}`);
                             }
-
-                            spinner.text = `Installing ${(skill as any).scoped_name || skill.name}...`;
-
-                            for (const agent of agents) {
-                                const config = AGENTS[agent];
-                                const targetDir = isGlobal ? config.globalDir : config.projectDir;
-                                await installSkillFromDatabase(skill as any, targetDir);
-                            }
-
-                            // Add to lock
-                            const lockEntry = createLockEntry({
-                                name: skill.name,
-                                scopedName: (skill as any).scoped_name || skill.name,
-                                source: (skill as any).github_url || `database:${skill.name}`,
-                                sourceType: (skill as any).github_url ? 'github' : 'database',
-                                version: (skill as any).version,
-                                agents,
-                                canonicalPath: isGlobal ? AGENTS[agents[0]].globalDir : AGENTS[agents[0]].projectDir,
-                                isGlobal,
-                            });
-                            await addSkillToLock(lockEntry);
-
-                            spinner.succeed(`Installed ${(skill as any).scoped_name || skill.name}`);
-                        } catch (err: any) {
-                            spinner.fail(`${skillName}: ${err.message}`);
                         }
                     }
 
@@ -507,8 +582,48 @@ export function registerInstallCommand(program: Command) {
                         skillDirs.push(tempDir);
                     }
 
+                    // Glob filter from --skill flag (applies to git clone flow too)
+                    if (options.skill && options.skill.length > 0) {
+                        const skillFilters: string[] = options.skill;
+                        const isGlobP = (s: string) => s.includes('*') || s.includes('?');
+                        const globM = (pattern: string, str: string): boolean => {
+                            const regex = new RegExp(
+                                '^' + pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&')
+                                    .replace(/\*/g, '.*')
+                                    .replace(/\?/g, '.') + '$',
+                                'i'
+                            );
+                            return regex.test(str);
+                        };
+                        skillDirs = skillDirs.filter(d => {
+                            const name = basename(d);
+                            return skillFilters.some(f =>
+                                isGlobP(f) ? globM(f, name) : name.toLowerCase() === f.toLowerCase()
+                            );
+                        });
+
+                        if (skillDirs.length === 0) {
+                            console.log(chalk.yellow(`No skills matching: ${skillFilters.join(', ')}\n`));
+                            await rm(tempDir, { recursive: true, force: true }).catch(() => { });
+                            return;
+                        }
+
+                        // Dry run for git clone flow
+                        if (options.dryRun) {
+                            console.log(chalk.cyan(`\n Matched ${skillDirs.length} skill(s):`));
+                            for (const d of skillDirs) {
+                                console.log(chalk.gray(`  - ${basename(d)}`));
+                            }
+                            console.log('');
+                            await rm(tempDir, { recursive: true, force: true }).catch(() => { });
+                            return;
+                        }
+
+                        console.log(chalk.cyan(`ℹ Installing ${skillDirs.length} skill(s) matching filter`));
+                    }
+
                     // Interactive skill selection when multiple skills found
-                    if (skillDirs.length > 1 && !options.yes) {
+                    if (skillDirs.length > 1 && !options.yes && !(options.skill && options.skill.length > 0)) {
                         const { relative } = await import('path');
                         const skillChoices = skillDirs.map(d => ({
                             label: basename(d),

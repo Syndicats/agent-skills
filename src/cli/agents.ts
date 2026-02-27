@@ -268,6 +268,25 @@ export const AGENTS: Record<string, AgentConfig> = {
         projectDir: '.zed/skills',
         globalDir: `${home}/.zed/skills`,
     },
+    // v1.1.7 — New agents from competitor feature requests
+    'lingma': {
+        name: 'lingma',
+        displayName: 'Lingma',
+        projectDir: '.lingma/skills',
+        globalDir: `${home}/.lingma/skills`,
+    },
+    'deep-agents': {
+        name: 'deep-agents',
+        displayName: 'Deep Agents',
+        projectDir: '.deepagents/skills',
+        globalDir: `${home}/.deepagents/agent/skills`,
+    },
+    'ruler': {
+        name: 'ruler',
+        displayName: 'Ruler',
+        projectDir: '.ruler/skills',
+        globalDir: `${home}/.ruler/skills`,
+    },
 };
 
 /** Helper to get install path */

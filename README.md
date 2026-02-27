@@ -1,13 +1,13 @@
 # Agent Skills CLI 🚀
 
-> **One CLI. 175,000+ skills. 42 AI agents.**
+> **One CLI. 175,000+ skills. 45 AI agents.**
 
 [![npm version](https://img.shields.io/npm/v/agent-skills-cli)](https://www.npmjs.com/package/agent-skills-cli)
 [![license](https://img.shields.io/npm/l/agent-skills-cli)](LICENSE)
 
-Install skills from the world's largest marketplace and sync them to **42 AI agents** including Cursor, Claude Code, GitHub Copilot, Windsurf, Cline, Gemini CLI, Zed, and more — all with a single command.
+Install skills from the world's largest marketplace and sync them to **45 AI agents** including Cursor, Claude Code, GitHub Copilot, Windsurf, Cline, Gemini CLI, Zed, and more — all with a single command.
 
-**What's new in v1.1.6:** Search overhaul — multi-select skills with spacebar, bulk install with `-y`, and new `-a`/`-g` flags: `skills search python -a claude -y`
+**What's new in v1.1.7:** Glob matching (`--skill 'core-*'`), prune stale skills (`--prune`), branch targeting (`owner/repo#dev`), and 3 new agents (Lingma, Deep Agents, Ruler)
 
 🌐 **Website:** [agentskills.in](https://agentskills.in)
 
@@ -143,7 +143,7 @@ skills search react -a cursor claude
 skills install @facebook/verify          # Auto-detect platforms (prompts)
 skills install @facebook/verify -a cursor # Install to Cursor only
 skills install @lobehub/typescript -a cursor,claude  # Install to multiple
-skills install @facebook/verify --all     # Install to all 42 agents
+skills install @facebook/verify --all     # Install to all 45 agents
 skills install pdf -g -a claude           # Install globally (~/.claude/skills/)
 skills install -s verify -a cursor        # Install by skill name
 skills add @facebook/verify -a cursor     # 'add' is an alias for 'install'
@@ -230,7 +230,7 @@ skills submit-repo vercel-labs/agent-skills   # Skills appear on marketplace
 
 ---
 
-## 🤖 Supported Platforms (42 Agents)
+## 🤖 Supported Platforms (45 Agents)
 
 | Platform | Project Dir | Global Dir |
 |----------|-------------|------------|

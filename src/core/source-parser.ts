@@ -74,6 +74,28 @@ function isDirectSkillUrl(input: string): boolean {
  * Parse a source string into a structured format
  */
 export function parseSource(input: string): ParsedSource {
+    // Extract #branch suffix before parsing (for SSH and shorthand URLs)
+    // HTTP URLs use /tree/branch path convention, so skip those
+    let fragmentRef: string | undefined;
+    if (!input.startsWith('http://') && !input.startsWith('https://')) {
+        const hashIndex = input.lastIndexOf('#');
+        if (hashIndex > 0) {
+            fragmentRef = input.slice(hashIndex + 1);
+            input = input.slice(0, hashIndex);
+        }
+    }
+
+    const result = parseSourceInner(input);
+
+    // Merge extracted #branch ref into result (if not already set by URL path)
+    if (fragmentRef && !result.ref) {
+        result.ref = fragmentRef;
+    }
+
+    return result;
+}
+
+function parseSourceInner(input: string): ParsedSource {
     // npm package: npm:@scope/package or npm:package-name
     const npmMatch = input.match(/^npm:(.+)$/);
     if (npmMatch) {

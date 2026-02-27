@@ -286,6 +286,7 @@ export function registerUpdateCommand(program: Command) {
         .option('-a, --all', 'Update all installed skills')
         .option('-g, --global', 'Only update globally installed skills')
         .option('-y, --yes', 'Skip confirmation prompts')
+        .option('--prune', 'Remove skills whose source path no longer exists')
         .action(async (skillNames, options) => {
             try {
                 const { readLock, removeSkillFromLock, addSkillToLock, createLockEntry } = await import('../../core/index.js');
@@ -431,6 +432,63 @@ export function registerUpdateCommand(program: Command) {
                 if (failCount > 0) {
                     console.log(chalk.yellow(`⚠ ${failCount} skill(s) failed to update`));
                 }
+
+                // ── Prune stale skills ──
+                if (options.prune) {
+                    // Check all skills (or global-only if -g flag) for:
+                    // 1. Skills in lock whose directories no longer exist on disk
+                    // 2. Skills whose source URL is now invalid (can't be parsed)
+                    const allLockSkills = Object.values(lock.skills);
+                    const pruneTargets = options.global
+                        ? allLockSkills.filter(s => s.isGlobal)
+                        : allLockSkills;
+
+                    const staleSkills: typeof pruneTargets = [];
+                    const pruneSpinner = ora('Scanning for stale skills...').start();
+
+                    for (const skill of pruneTargets) {
+                        // Check if the skill directory exists on disk for any of its agents
+                        let existsOnDisk = false;
+                        for (const agent of skill.agents) {
+                            const agentConfig = AGENTS[agent];
+                            if (!agentConfig) continue;
+                            const dir = skill.isGlobal
+                                ? join(agentConfig.globalDir, skill.name)
+                                : join(skill.projectDir || process.cwd(), agentConfig.projectDir, skill.name);
+                            if (existsSync(dir)) {
+                                existsOnDisk = true;
+                                break;
+                            }
+                        }
+
+                        if (!existsOnDisk) {
+                            staleSkills.push(skill);
+                        }
+                    }
+
+                    pruneSpinner.stop();
+
+                    if (staleSkills.length > 0) {
+                        console.log(chalk.yellow(`\n🧹 Found ${staleSkills.length} stale skill(s) (in lock but missing from disk):`));
+                        for (const skill of staleSkills) {
+                            console.log(chalk.gray(`  - ${skill.scopedName} (${skill.sourceType})`));
+                        }
+
+                        // Remove stale entries from lock
+                        for (const skill of staleSkills) {
+                            try {
+                                await removeSkillFromLock(skill.name);
+                                console.log(chalk.green(`  ✔ Removed ${skill.name} from lock file`));
+                            } catch (err: any) {
+                                console.log(chalk.red(`  ✖ Failed to prune ${skill.name}: ${err.message}`));
+                            }
+                        }
+                        console.log(chalk.green(`\n🧹 Pruned ${staleSkills.length} stale skill(s) from lock file`));
+                    } else {
+                        console.log(chalk.gray('\n🧹 No stale skills found. All lock entries exist on disk.'));
+                    }
+                }
+
                 console.log('');
 
             } catch (error) {
