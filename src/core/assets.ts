@@ -111,7 +111,7 @@ export async function listAssetsFromGitHub(
 
     const headers: Record<string, string> = {
         'Accept': 'application/vnd.github.v3+json',
-        'User-Agent': 'agent-skills-cli'
+        'User-Agent': '@syndicats/agent-skills'
     };
 
     if (token) {

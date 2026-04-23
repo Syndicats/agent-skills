@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2026-04-23
+
+### Forked as @syndicats/agent-skills
+
+This release marks the fork from [Karanjot786/agent-skills-cli](https://github.com/Karanjot786/agent-skills-cli). The project has been rebranded under the Syndicats organization and refocused on self-managed Git repositories.
+
+### Removed
+- **Marketplace integration** -- All connections to `agentskills.in` have been removed
+- **Telemetry** -- All anonymous usage tracking has been removed
+- **`submit` command** -- No longer submits skills to an external marketplace
+- **`submit-repo` command** -- No longer submits repos for external indexing
+- **`market-*` commands** -- All marketplace browsing commands removed (`market-list`, `market-search`, `market-install`, etc.)
+- **FZF interactive search** -- Removed remote API-based interactive search
+
+### Changed
+- **`search` command** -- Now searches locally installed skills instead of a remote marketplace
+- **`install` command** -- No longer falls back to marketplace API; operates directly with Git repos, npm, and local paths
+- **`suggest` command** -- Now shows project analysis and keywords without remote lookup
+- **`setup` wizard** -- Simplified to export-only workflow (no marketplace install)
+- **Package renamed** to `@syndicats/agent-skills`
+
+### Prior changes (included in this fork)
+- `--local` flag for project-level install override
+- `--list` option to list skills in a remote repo
+- Private SSH cloning fixes
+- `.skillsrc.json` configuration support
+- Glob matching (`--skill 'core-*'`), prune stale skills (`--prune`)
+- Branch targeting (`owner/repo#dev`), 3 new agents (Lingma, Deep Agents, Ruler)
+
+---
+
 ## [1.1.7] - 2026-02-27
 
 ### 🔎 Glob/Wildcard `--skill` Matching

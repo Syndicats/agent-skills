@@ -78,8 +78,8 @@ function generateGitHubActions(options: any): { path: string; content: string } 
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install agent-skills-cli
-        run: npm install -g agent-skills-cli`);
+      - name: Install @syndicats/agent-skills
+        run: npm install -g @syndicats/agent-skills`);
 
     if (options.validate !== false) {
         steps.push(`      - name: Validate Skills
@@ -121,7 +121,7 @@ ${steps.join('\n')}
 }
 
 function generateGitLabCI(options: any): { path: string; content: string } {
-    const scripts: string[] = ['npm install -g agent-skills-cli'];
+    const scripts: string[] = ['npm install -g @syndicats/agent-skills'];
     if (options.validate !== false) scripts.push('skills validate .');
     if (options.audit !== false) scripts.push('skills audit . --fail-on high');
 
@@ -142,7 +142,7 @@ ${scripts.map(s => `    - ${s}`).join('\n')}
 }
 
 function generateBitbucketPipelines(options: any): { path: string; content: string } {
-    const scripts: string[] = ['npm install -g agent-skills-cli'];
+    const scripts: string[] = ['npm install -g @syndicats/agent-skills'];
     if (options.validate !== false) scripts.push('skills validate .');
     if (options.audit !== false) scripts.push('skills audit . --fail-on high');
 

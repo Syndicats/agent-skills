@@ -94,7 +94,7 @@ async function lockspecGenerate(outputPath?: string): Promise<void> {
     const manifest: LockspecManifest = {
         version: '1.0.0',
         generatedAt: new Date().toISOString(),
-        generatedBy: 'agent-skills-cli',
+        generatedBy: '@syndicats/agent-skills',
         skills: installed.map(s => ({
             name: s.name,
             scopedName: s.scopedName || s.name,

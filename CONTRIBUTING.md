@@ -1,20 +1,20 @@
 # Contributing to Agent Skills CLI
 
-Thank you for your interest in contributing! 🎉
+Thank you for your interest in contributing!
 
 ## Ways to Contribute
 
-- 🐛 Report bugs
-- 💡 Suggest features
-- 📝 Improve documentation
-- 🔧 Submit pull requests
+- Report bugs
+- Suggest features
+- Improve documentation
+- Submit pull requests
 
 ## Development Setup
 
 ```bash
 # Clone the repo
-git clone https://github.com/Karanjot786/agent-skills-cli.git
-cd agent-skills-cli
+git clone git@github.com:Syndicats/agent-skills.git
+cd agent-skills
 
 # Install dependencies
 npm install
@@ -40,7 +40,6 @@ node dist/cli/index.js --help
 
 - Use TypeScript
 - Follow existing code patterns
-- Add JSDoc comments for public functions
 
 ## Testing
 
@@ -48,10 +47,9 @@ Before submitting:
 ```bash
 npm run build
 skills --help
-skills market-list --limit 5
-skills install pdf
+skills install owner/repo --list
 ```
 
 ## Questions?
 
-Open an issue or reach out on [GitHub Discussions](https://github.com/Karanjot786/agent-skills-cli/discussions).
+Open an issue on [GitHub](https://github.com/Syndicats/agent-skills/issues).

@@ -1,88 +1,77 @@
-# Agent Skills CLI 🚀
+# Agent Skills CLI
 
-> **One CLI. 175,000+ skills. 45 AI agents.**
+> **One CLI. 45+ AI agents. Self-managed skill repositories.**
 
-[![npm version](https://img.shields.io/npm/v/agent-skills-cli)](https://www.npmjs.com/package/agent-skills-cli)
-[![license](https://img.shields.io/npm/l/agent-skills-cli)](LICENSE)
+[![npm version](https://img.shields.io/npm/v/@syndicats/agent-skills)](https://www.npmjs.com/package/@syndicats/agent-skills)
+[![license](https://img.shields.io/npm/l/@syndicats/agent-skills)](LICENSE)
 
-Install skills from the world's largest marketplace and sync them to **45 AI agents** including Cursor, Claude Code, GitHub Copilot, Windsurf, Cline, Gemini CLI, Zed, and more — all with a single command.
-
-**What's new in v1.1.7:** Glob matching (`--skill 'core-*'`), prune stale skills (`--prune`), branch targeting (`owner/repo#dev`), and 3 new agents (Lingma, Deep Agents, Ruler)
-
-🌐 **Website:** [agentskills.in](https://agentskills.in)
+Install skills from Git repositories and sync them to **45 AI agents** including Cursor, Claude Code, GitHub Copilot, Windsurf, Cline, Gemini CLI, Zed, and more.
 
 ```bash
-npm install -g agent-skills-cli
-skills install @anthropic/xlsx
+npm install -g @syndicats/agent-skills
+skills install owner/repo
 ```
 
 ---
 
-## ✨ Features
+## Features
 
-- **175,000+ Skills** — Access the largest collection of AI agent skills
-- **45 AI Agents** — Cursor, Claude, Copilot, Windsurf, Cline, Gemini CLI, Zed, and 38+ more
-- **FZF Interactive Search** — Real-time search with keyboard navigation: `skills search -i`
-- **Conflict Detection** — Find contradictions and overlaps across skills: `skills doctor --deep`
-- **Context Budget** — Smart token-aware skill selection for your project: `skills budget -b 8000`
-- **Skill Diff** — Section-aware comparison of two skills: `skills diff A B`
-- **Frozen Installs** — Deterministic lockfile-based installs (like `npm ci`): `skills frozen`
-- **Skill Compose** — Merge, chain, or conditionally combine skills: `skills compose A B -o C`
-- **Skill Testing** — 10 built-in quality assertions + custom tests: `skills test --all`
-- **Sandbox Preview** — Quality + conflicts check before install: `skills sandbox @owner/repo`
-- **Watch Mode** — Auto-sync skills to agents on file changes: `skills watch`
-- **Skill Splitter** — Split large skills into focused sub-skills: `skills split my-skill`
-- **Benchmarking** — Compare skill quality across your collection: `skills bench --all`
-- **Private Git Repos** — GitLab, Bitbucket, SSH, self-hosted Git: `skills install git@host:team/repo`
-- **npm Packages** — Install from npm registries: `skills install npm:@scope/package`
-- **`.skillsrc` Config** — Enterprise config files for custom registries, tokens, and defaults
-- **Quality Scoring** — 4-dimension skill scoring (0–100): `skills score`
-- **Lock File Tracking** — Track all installations in `~/.skills/skills.lock`
-- **Platform Targeting** — Install to specific platforms with `-a claude,cursor`
+- **45 AI Agents** -- Cursor, Claude, Copilot, Windsurf, Cline, Gemini CLI, Zed, and 38+ more
+- **Git Repos** -- Install from GitHub, GitLab, Bitbucket, SSH, and self-hosted Git
+- **npm Packages** -- Install from npm registries: `skills install npm:@scope/package`
+- **Private Repos** -- SSH keys, tokens, git credential helpers
+- **Conflict Detection** -- Find contradictions and overlaps: `skills doctor --deep`
+- **Context Budget** -- Smart token-aware skill selection: `skills budget -b 8000`
+- **Skill Diff** -- Section-aware comparison: `skills diff A B`
+- **Frozen Installs** -- Deterministic lockfile-based installs: `skills frozen`
+- **Skill Compose** -- Merge, chain, or conditionally combine: `skills compose A B -o C`
+- **Skill Testing** -- 10 built-in quality assertions + custom tests: `skills test --all`
+- **Sandbox Preview** -- Quality + conflicts check before install: `skills sandbox @owner/repo`
+- **Watch Mode** -- Auto-sync skills to agents on file changes: `skills watch`
+- **Quality Scoring** -- 4-dimension skill scoring (0-100): `skills score`
+- **Lock File Tracking** -- Track all installations in `~/.skills/skills.lock`
+- **Platform Targeting** -- Install to specific platforms with `-a claude,cursor`
+- **`.skillsrc` Config** -- Enterprise config files for custom registries, tokens, and defaults
 
 ---
 
-## 📦 Installation
+## Installation
 
 ```bash
-npm install -g agent-skills-cli
+npm install -g @syndicats/agent-skills
 ```
 
 **Requirements:** Node.js 18+
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
-# ⭐ Install a skill (auto-detects platforms)
-skills install @facebook/verify
+# Install from a GitHub repo
+skills install owner/repo
 
-# ⭐ Install from a GitHub repo
-skills add vercel-labs/agent-skills
-
-# ⭐ Install from private Git (auto-detects credentials)
+# Install from private Git (auto-detects credentials)
 skills install git@gitlab.com:team/internal-skills.git
 skills install https://git.company.com/team/skills --token $GIT_TOKEN
 
-# ⭐ Install from npm registry
+# Install from npm registry
 skills install npm:@company/skills
-skills install npm:@company/skills --registry https://npm.company.com
 
 # Install to specific platforms
-skills install @facebook/verify -a claude,cursor
+skills install owner/repo -a claude,cursor
 
 # Install to ALL 45 platforms at once
-skills install @lobehub/typescript --all
+skills install owner/repo --all
 
 # Install globally (home directory)
-skills install pdf -g -a claude
+skills install owner/repo -g -a claude
 
 # Install specific skill from repo
-skills add anthropic/skills@xlsx
+skills install owner/repo -s skill-name
 
 # List skills in a repo
-skills add owner/repo --list
+skills install owner/repo --list
 
 # Remove installed skills
 skills remove xlsx
@@ -93,41 +82,31 @@ skills check
 # Update skills from source
 skills update --all
 
-# Search and install skills interactively (multi-select)
+# Search installed skills
 skills search python
-
-# Search + auto-install all results to an agent
-skills search python -a claude -y
-
-# Search + install to specific agents
-skills search react -a cursor claude
 ```
 
 ---
 
-## 🛠️ Commands
+## Commands
 
 ### Core Commands
 
 | Command | Description |
 |---------|-------------|
-| `skills install <name>` | Install a skill from marketplace |
-| `skills add <source>` | Install from Git repo (owner/repo or URL) |
-| `skills search <query>` | Search and install skills (multi-select) |
-| `skills search -i` | FZF-style interactive search with keyboard navigation |
-| `skills search <query> -a <agent> -y` | Search and bulk-install all results to an agent |
+| `skills install <source>` | Install from Git repo, URL, npm, or local directory |
+| `skills search <query>` | Search locally installed skills |
 | `skills check` | Check installed skills (`--agent`, `--global`, `--json`) |
 | `skills update` | Update skills (`--all`, `--global`, `--yes`, `--prune`) |
 | `skills remove` | Remove installed skills (`--agent`, `--global`, `--all`, `--yes`) |
-| `skills score [path]` | Score skill quality (0–100, grades F–A) |
-| `skills submit-repo <repo>` | Submit a GitHub repo for marketplace auto-indexing |
+| `skills score [path]` | Score skill quality (0-100, grades F-A) |
 | `skills doctor` | Diagnose issues (`--deep` for conflicts, `--fix` to auto-repair) |
 
-### Power Tools (v1.1.4)
+### Power Tools
 
 | Command | Description |
 |---------|-------------|
-| `skills budget -b <tokens>` | Smart context budget — load only relevant skills within limit |
+| `skills budget -b <tokens>` | Smart context budget -- load only relevant skills within limit |
 | `skills diff <A> <B>` | Section-aware skill comparison |
 | `skills compose <skills...>` | Merge/chain/conditional skill composition |
 | `skills test [skills...]` | Run quality assertions against skills |
@@ -140,34 +119,19 @@ skills search react -a cursor claude
 ### Install Options
 
 ```bash
-skills install @facebook/verify          # Auto-detect platforms (prompts)
-skills install @facebook/verify -a cursor # Install to Cursor only
-skills install @lobehub/typescript -a cursor,claude  # Install to multiple
-skills install @facebook/verify --all     # Install to all 45 agents
-skills install pdf -g -a claude           # Install globally (~/.claude/skills/)
-skills install pdf --local -a claude      # Install locally (overrides .skillsrc global default)
-skills install -s verify -a cursor        # Install by skill name
-skills add @facebook/verify -a cursor     # 'add' / 'i' are aliases for 'install'
-skills install owner/repo --list          # List skills in repo without installing
-skills install owner/repo --dry-run       # Show matched skills without installing
+skills install owner/repo                    # Auto-detect platforms (prompts)
+skills install owner/repo -a cursor          # Install to Cursor only
+skills install owner/repo -a cursor,claude   # Install to multiple
+skills install owner/repo --all              # Install to all 45 agents
+skills install owner/repo -g -a claude       # Install globally
+skills install owner/repo --local -a claude  # Install locally (overrides .skillsrc)
+skills install owner/repo -s skill-name      # Install specific skill
+skills install owner/repo --list             # List skills in repo
+skills install owner/repo --dry-run          # Show matched skills without installing
 
-# Bulk install all skills from a repo (no prompts)
-skills install @ComposioHQ/awesome-claude-skills -a claude -y
-skills install @github/awesome-copilot -a cursor,claude -y
-skills install @owner/repo --all -y        # All skills to all agents
-```
-
-### Git URL Install (`skills add`)
-
-```bash
-skills add owner/repo              # GitHub shorthand
-skills add owner/repo@skill-name   # Install specific skill directly
-skills add https://github.com/user/repo  # Full URL
-skills add https://gitlab.com/org/repo   # GitLab
-skills add owner/repo --list       # List skills in repo
-skills add owner/repo -s skill-name      # Install specific skill
-skills add owner/repo -y -g        # Non-interactive, global
-skills add owner/repo -a claude -y # Install ALL skills to claude (no prompt)
+# Bulk install (no prompts)
+skills install owner/repo -a claude -y
+skills install owner/repo --all -y
 ```
 
 ### Private Git Repos
@@ -183,24 +147,15 @@ skills install https://git.company.com/team/repo --token=xxx
 # Token from environment variable
 GITLAB_TOKEN=xxx skills install https://gitlab.com/team/repo
 BITBUCKET_TOKEN=xxx skills install https://bitbucket.org/team/repo
-
-# Bitbucket
-skills install https://bitbucket.org/team/skills-repo
 ```
 
-**Auth resolution order:** `--token` flag → env vars (`GH_TOKEN`, `GITLAB_TOKEN`, `BITBUCKET_TOKEN`, `GIT_TOKEN`) → SSH keys → git credential helper → `.netrc`
+**Auth resolution order:** `--token` flag -> env vars (`GH_TOKEN`, `GITLAB_TOKEN`, `BITBUCKET_TOKEN`, `GIT_TOKEN`) -> SSH keys -> git credential helper -> `.netrc`
 
 ### npm Packages
 
 ```bash
-# Public npm packages
-skills install npm:chalk
-skills install npm:@anthropic/skills
-
-# Scoped package with version
+skills install npm:@company/skills
 skills install npm:@company/skills@1.1.2
-
-# Private npm registry
 skills install npm:@company/skills --registry https://npm.company.com
 ```
 
@@ -209,11 +164,11 @@ skills install npm:@company/skills --registry https://npm.company.com
 | Command | Description |
 |---------|-------------|
 | `skills init <name>` | Create a new skill from template |
-| `skills craft <name>` | Craft a new skill with full structure (`--full`, `--scripts`, `--references`) |
-| `skills forge <description>` | AI-generate a skill from natural language (`--agent`, `--dry-run`) |
-| `skills mine` | Extract coding patterns from git history (`--depth`, `--format skill`) |
-| `skills capture <source>` | Capture a URL, text, or file as a skill (`--name`, `--tags`) |
-| `skills convert <file>` | Convert skills between agent formats (`-o`, `--overwrite`) |
+| `skills craft <name>` | Craft a new skill with full structure |
+| `skills forge <description>` | AI-generate a skill from natural language |
+| `skills mine` | Extract coding patterns from git history |
+| `skills capture <source>` | Capture a URL, text, or file as a skill |
+| `skills convert <file>` | Convert skills between agent formats |
 | `skills bootstrap` | Auto-generate agent instruction files from your project |
 
 ### Validation & Quality
@@ -221,8 +176,8 @@ skills install npm:@company/skills --registry https://npm.company.com
 | Command | Description |
 |---------|-------------|
 | `skills validate <path>` | Validate a SKILL.md file |
-| `skills audit [skills...]` | Security audit — scan for vulnerabilities (`--format`, `--fail-on`) |
-| `skills score [path]` | Score skill quality (0–100, grades F–A) (`--json`, `--verbose`) |
+| `skills audit [skills...]` | Security audit -- scan for vulnerabilities |
+| `skills score [path]` | Score skill quality (0-100, grades F-A) |
 
 ### Export & Sync
 
@@ -231,58 +186,9 @@ skills install npm:@company/skills --registry https://npm.company.com
 | `skills export` | Export skills to agents (`--target`, `--directory`, `--list-agents`) |
 | `skills info` | Show installation status and paths |
 
-### Collaboration
-
-| Command | Description |
-|---------|-------------|
-| `skills collab init <team>` | Initialize team collaboration |
-| `skills collab share <skill>` | Share a skill with the team |
-| `skills collab sync` | Sync shared skills with team |
-| `skills lockspec generate` | Generate a team skill manifest |
-| `skills lockspec verify` | Verify installation matches lockspec |
-| `skills grid serve` | P2P skill sharing on local network |
-
-### Automation & Rules
-
-| Command | Description |
-|---------|-------------|
-| `skills rule add <name>` | Add an always-on coding rule (`--description`, `--global`) |
-| `skills rule list` | List all coding rules |
-| `skills trigger add <name>` | Auto-trigger skills on events (`--event`, `--pattern`, `--action`) |
-| `skills watch [dir]` | Auto-sync skills to agents on file changes |
-| `skills ci` | Generate CI/CD workflow for skill validation |
-
-### Session & Planning
-
-| Command | Description |
-|---------|-------------|
-| `skills recall save <key> <value>` | Store context across sessions |
-| `skills recall search <query>` | Search stored memory entries |
-| `skills track save <name>` | Save current session state |
-| `skills blueprint create <name>` | Create structured development plan with milestones |
-| `skills method apply <name>` | Apply a development methodology pack |
-| `skills insight` | Analyze installed skills — patterns, coverage, and gaps |
-
-### Quality Scoring
-
-```bash
-skills score ./my-skill             # Score a skill (0–100, grade F–A)
-skills score ./my-skill --verbose    # Show individual check details
-skills score ./my-skill --json       # Machine-readable output
-```
-
-**Dimensions:** Structure (30%), Clarity (30%), Specificity (30%), Advanced (10%)
-
-### Submit Repos to Marketplace
-
-```bash
-skills submit-repo Jeffallan/claude-skills   # Auto-index all skills in repo
-skills submit-repo vercel-labs/agent-skills   # Skills appear on marketplace
-```
-
 ---
 
-## 🤖 Supported Platforms (45 Agents)
+## Supported Platforms (45 Agents)
 
 | Platform | Project Dir | Global Dir |
 |----------|-------------|------------|
@@ -301,9 +207,9 @@ skills submit-repo vercel-labs/agent-skills   # Skills appear on marketplace
 
 ---
 
-## ⚙️ Configuration (`.skillsrc`)
+## Configuration (`.skillsrc`)
 
-Create a `.skillsrc` or `.skillsrc.json` file in your project root or home directory to configure private sources and defaults:
+Create a `.skillsrc` or `.skillsrc.json` file in your project root or home directory:
 
 ```json
 {
@@ -328,25 +234,22 @@ Create a `.skillsrc` or `.skillsrc.json` file in your project root or home direc
 }
 ```
 
-Config is loaded from: project `.skillsrc` / `.skillsrc.json` → home `~/.skillsrc` / `~/.skillsrc.json` (first found wins). Both `"agent": "cursor"` (singular string) and `"agents": ["cursor", "claude"]` (array) are accepted in defaults.
+Config is loaded from: project `.skillsrc` / `.skillsrc.json` -> home `~/.skillsrc` / `~/.skillsrc.json` (first found wins).
 
 ---
 
-## 🔐 Environment Variables
+## Environment Variables
 
 | Variable | Purpose |
-|----------|---------|  
+|----------|---------|
 | `GH_TOKEN` / `GITHUB_TOKEN` | GitHub private repo authentication |
 | `GITLAB_TOKEN` / `GL_TOKEN` | GitLab private repo authentication |
 | `BITBUCKET_TOKEN` / `BB_TOKEN` | Bitbucket private repo authentication |
 | `GIT_TOKEN` | Generic Git authentication (any host) |
-| `DISABLE_TELEMETRY` / `DO_NOT_TRACK` | Opt out of anonymous telemetry |
-
-Telemetry is automatically disabled in CI environments.
 
 ---
 
-## 📚 Creating Skills
+## Creating Skills
 
 Create a `SKILL.md` file:
 
@@ -370,27 +273,28 @@ skills export
 
 ---
 
-## 🔗 Links
+## Credits
 
-- **Website:** [agentskills.in](https://agentskills.in)
-- **Marketplace:** [agentskills.in/marketplace](https://agentskills.in/marketplace)
-- **Documentation:** [agentskills.in/docs](https://agentskills.in/docs)
-- **CLI GitHub:** [github.com/Karanjot786/agent-skills-cli](https://github.com/Karanjot786/agent-skills-cli)
-- **Website GitHub:** [github.com/Karanjot786/agent-skills-UI](https://github.com/Karanjot786/agent-skills-UI)
-- **npm:** [npmjs.com/package/agent-skills-cli](https://www.npmjs.com/package/agent-skills-cli)
+This project is a fork of [agent-skills-cli](https://github.com/Karanjot786/agent-skills-cli) by **Karanjot Singh** ([@Karanjot786](https://github.com/Karanjot786)), licensed under MIT. We are grateful for the original work that made this project possible.
 
----
-
-## 👤 Author
-
-**Karanjot Singh**
-
-- 🐦 [@Karanjotdulay](https://x.com/Karanjotdulay)
-- 💼 [LinkedIn](https://www.linkedin.com/in/karanjot786/)
-- 🐙 [@Karanjot786](https://github.com/Karanjot786)
+**Changes in this fork:**
+- Removed external marketplace and telemetry dependencies
+- Self-managed Git repositories as the primary skill source
+- Rebranded under Syndicats
 
 ---
 
-## 📄 License
+## Links
 
-MIT © [Karanjot Singh](https://github.com/Karanjot786)
+- **GitHub:** [github.com/Syndicats/agent-skills](https://github.com/Syndicats/agent-skills)
+- **npm:** [npmjs.com/package/@syndicats/agent-skills](https://www.npmjs.com/package/@syndicats/agent-skills)
+- **Original project:** [github.com/Karanjot786/agent-skills-cli](https://github.com/Karanjot786/agent-skills-cli)
+
+---
+
+## License
+
+MIT -- see [LICENSE](LICENSE)
+
+Original work: Copyright (c) 2026 Karanjot786
+This fork: Copyright (c) 2026 Syndicats

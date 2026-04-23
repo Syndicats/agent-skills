@@ -88,7 +88,7 @@ export async function fetchFromDB(options: FetchOptions = {}): Promise<SkillsDBR
         const res = await fetch(`${SKILLS_API}?${params}`, {
             headers: {
                 'Accept': 'application/json',
-                'User-Agent': 'agent-skills-cli'
+                'User-Agent': '@syndicats/agent-skills'
             }
         });
 

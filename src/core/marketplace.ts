@@ -198,7 +198,7 @@ async function fetchSkillsFromSource(
         const response = await fetch(apiUrl, {
             headers: {
                 'Accept': 'application/vnd.github.v3+json',
-                'User-Agent': 'agent-skills-cli'
+                'User-Agent': '@syndicats/agent-skills'
             }
         });
 

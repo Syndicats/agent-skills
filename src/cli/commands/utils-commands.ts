@@ -75,7 +75,7 @@ export function registerDoctorCommand(program: Command) {
                 // Check 5: GitHub API connectivity
                 try {
                     const response = await fetch('https://api.github.com', {
-                        headers: { 'User-Agent': 'agent-skills-cli' }
+                        headers: { 'User-Agent': '@syndicats/agent-skills' }
                     });
                     if (response.ok) {
                         checks.push({ name: 'GitHub API', status: 'pass', message: 'Connected' });
