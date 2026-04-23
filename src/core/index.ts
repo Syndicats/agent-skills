@@ -25,7 +25,9 @@ export {
     loadSkillResource,
     listSkillResources,
     getSkillByName,
-    DEFAULT_SKILL_PATHS
+    DEFAULT_SKILL_PATHS,
+    SKILLS_DIR_NAME,
+    GLOBAL_SKILLS_DIR
 } from './loader.js';
 
 // Validator functions

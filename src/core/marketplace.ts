@@ -24,7 +24,7 @@ const execAsync = promisify(exec);
 /**
  * Default config file location
  */
-const CONFIG_DIR = join(process.env.HOME || '~', '.antigravity');
+const CONFIG_DIR = join(process.env.HOME || '~', '.skills');
 const CONFIG_FILE = join(CONFIG_DIR, 'marketplace.json');
 const DEFAULT_INSTALL_DIR = join(CONFIG_DIR, 'skills');
 

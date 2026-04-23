@@ -122,6 +122,23 @@ function parseSourceInner(input: string): ParsedSource {
     const sshMatch = input.match(/^git@([^:/]+)[:/](.+?)(?:\.git)?$/);
     if (sshMatch) {
         const [, host, path] = sshMatch;
+
+        // Detect git@host:PORT/path (port-based SSH) and convert to ssh:// format
+        // In git@host:path, the colon separates host from path — a leading number
+        // followed by / is ambiguous but almost always means a port, not a directory.
+        const portMatch = path.match(/^(\d+)\/(.+)$/);
+        if (portMatch) {
+            const [, port, repoPath] = portMatch;
+            const sshUrl = `ssh://git@${host}:${port}/${repoPath}${input.endsWith('.git') ? '.git' : ''}`;
+            const repoParts = repoPath.split('/');
+            return {
+                type: 'private-git',
+                url: sshUrl,
+                sshHost: host,
+                subpath: repoParts.length > 2 ? repoParts.slice(2).join('/') : undefined,
+            };
+        }
+
         const parts = path.split('/');
         return {
             type: 'private-git',

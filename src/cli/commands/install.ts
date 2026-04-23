@@ -24,6 +24,7 @@ import {
     parseSource,
     cloneWithAuth,
     sanitizeUrl,
+    loadSkillsRC,
 } from '../../core/index.js';
 import { trackCommand } from '../../core/telemetry.js';
 
@@ -51,6 +52,7 @@ export function registerInstallCommand(program: Command) {
         .option('--token <token>', 'Authentication token for private Git repos')
         .option('--registry <url>', 'npm registry URL (for npm: sources)')
         .option('--dry-run', 'Show matched skills without installing')
+        .option('-l, --list', 'List skills in the repository without installing')
         .action(async (source, options) => {
             try {
                 const { mkdir, cp, rm, readdir, readFile } = await import('fs/promises');
@@ -587,6 +589,24 @@ export function registerInstallCommand(program: Command) {
                     if (skillDirs.length === 0) {
                         // Treat entire repo as a skill
                         skillDirs.push(tempDir);
+                    }
+
+                    // --list: show discovered skills and exit
+                    if (options.list) {
+                        if (skillDirs.length === 1 && skillDirs[0] === tempDir) {
+                            console.log(chalk.cyan('\nSkills in repository:'));
+                            console.log(chalk.gray(`  - ${basename(parsed.url.replace(/\.git$/, ''))}`));
+                        } else {
+                            console.log(chalk.cyan(`\nFound ${skillDirs.length} skill(s) in repository:\n`));
+                            for (const d of skillDirs) {
+                                const { relative } = await import('path');
+                                const relPath = relative(tempDir, d);
+                                console.log(chalk.white(`  - ${basename(d)}`) + chalk.gray(` (${relPath})`));
+                            }
+                        }
+                        console.log('');
+                        await rm(tempDir, { recursive: true, force: true }).catch(() => { });
+                        return;
                     }
 
                     // Glob filter from --skill flag (applies to git clone flow too)

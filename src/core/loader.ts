@@ -16,14 +16,25 @@ import type {
 } from '../types/index.js';
 
 /**
+ * Canonical skills storage directory name (agent-neutral).
+ * Used for the shared skills cache and config, not tied to any specific agent.
+ */
+export const SKILLS_DIR_NAME = '.skills';
+
+/**
+ * Global skills directory (user-wide)
+ */
+export const GLOBAL_SKILLS_DIR = join(process.env.HOME || '~', SKILLS_DIR_NAME, 'skills');
+
+/**
  * Default search paths for skills
  */
 export const DEFAULT_SKILL_PATHS = [
     // Global user skills
+    GLOBAL_SKILLS_DIR,
+    // Legacy global path (backward compat)
     join(process.env.HOME || '~', '.antigravity', 'skills'),
     // Project-level skills
-    '.antigravity/skills',
-    // Local development skills
     './skills'
 ];
 
