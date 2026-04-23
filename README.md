@@ -21,7 +21,7 @@ skills install @anthropic/xlsx
 ## ✨ Features
 
 - **175,000+ Skills** — Access the largest collection of AI agent skills
-- **42 AI Agents** — Cursor, Claude, Copilot, Windsurf, Cline, Gemini CLI, Zed, and 35+ more
+- **45 AI Agents** — Cursor, Claude, Copilot, Windsurf, Cline, Gemini CLI, Zed, and 38+ more
 - **FZF Interactive Search** — Real-time search with keyboard navigation: `skills search -i`
 - **Conflict Detection** — Find contradictions and overlaps across skills: `skills doctor --deep`
 - **Context Budget** — Smart token-aware skill selection for your project: `skills budget -b 8000`
@@ -38,7 +38,7 @@ skills install @anthropic/xlsx
 - **`.skillsrc` Config** — Enterprise config files for custom registries, tokens, and defaults
 - **Quality Scoring** — 4-dimension skill scoring (0–100): `skills score`
 - **Lock File Tracking** — Track all installations in `~/.skills/skills.lock`
-- **Platform Targeting** — Install to specific platforms with `-t claude,cursor`
+- **Platform Targeting** — Install to specific platforms with `-a claude,cursor`
 
 ---
 
@@ -72,7 +72,7 @@ skills install npm:@company/skills --registry https://npm.company.com
 # Install to specific platforms
 skills install @facebook/verify -a claude,cursor
 
-# Install to ALL 42 platforms at once
+# Install to ALL 45 platforms at once
 skills install @lobehub/typescript --all
 
 # Install globally (home directory)
@@ -116,12 +116,12 @@ skills search react -a cursor claude
 | `skills search <query>` | Search and install skills (multi-select) |
 | `skills search -i` | FZF-style interactive search with keyboard navigation |
 | `skills search <query> -a <agent> -y` | Search and bulk-install all results to an agent |
-| `skills check` | Check installed skills with source and version info |
-| `skills update` | Update skills from their source repos |
-| `skills remove` | Remove installed skills (interactive multi-select) |
+| `skills check` | Check installed skills (`--agent`, `--global`, `--json`) |
+| `skills update` | Update skills (`--all`, `--global`, `--yes`, `--prune`) |
+| `skills remove` | Remove installed skills (`--agent`, `--global`, `--all`, `--yes`) |
 | `skills score [path]` | Score skill quality (0–100, grades F–A) |
 | `skills submit-repo <repo>` | Submit a GitHub repo for marketplace auto-indexing |
-| `skills doctor` | Diagnose issues (`--deep` for conflict detection) |
+| `skills doctor` | Diagnose issues (`--deep` for conflicts, `--fix` to auto-repair) |
 
 ### Power Tools (v1.1.4)
 
@@ -145,8 +145,11 @@ skills install @facebook/verify -a cursor # Install to Cursor only
 skills install @lobehub/typescript -a cursor,claude  # Install to multiple
 skills install @facebook/verify --all     # Install to all 45 agents
 skills install pdf -g -a claude           # Install globally (~/.claude/skills/)
+skills install pdf --local -a claude      # Install locally (overrides .skillsrc global default)
 skills install -s verify -a cursor        # Install by skill name
-skills add @facebook/verify -a cursor     # 'add' is an alias for 'install'
+skills add @facebook/verify -a cursor     # 'add' / 'i' are aliases for 'install'
+skills install owner/repo --list          # List skills in repo without installing
+skills install owner/repo --dry-run       # Show matched skills without installing
 
 # Bulk install all skills from a repo (no prompts)
 skills install @ComposioHQ/awesome-claude-skills -a claude -y
@@ -201,15 +204,64 @@ skills install npm:@company/skills@1.1.2
 skills install npm:@company/skills --registry https://npm.company.com
 ```
 
-### Other Commands
+### Development & Creation
 
-```bash
-skills init <name>        # Create new skill from template
-skills validate <path>    # Validate a SKILL.md file
-skills export             # Export skills to agents
-skills sync               # Sync to Antigravity workflows
-skills info               # Show installation status
-```
+| Command | Description |
+|---------|-------------|
+| `skills init <name>` | Create a new skill from template |
+| `skills craft <name>` | Craft a new skill with full structure (`--full`, `--scripts`, `--references`) |
+| `skills forge <description>` | AI-generate a skill from natural language (`--agent`, `--dry-run`) |
+| `skills mine` | Extract coding patterns from git history (`--depth`, `--format skill`) |
+| `skills capture <source>` | Capture a URL, text, or file as a skill (`--name`, `--tags`) |
+| `skills convert <file>` | Convert skills between agent formats (`-o`, `--overwrite`) |
+| `skills bootstrap` | Auto-generate agent instruction files from your project |
+
+### Validation & Quality
+
+| Command | Description |
+|---------|-------------|
+| `skills validate <path>` | Validate a SKILL.md file |
+| `skills audit [skills...]` | Security audit — scan for vulnerabilities (`--format`, `--fail-on`) |
+| `skills score [path]` | Score skill quality (0–100, grades F–A) (`--json`, `--verbose`) |
+
+### Export & Sync
+
+| Command | Description |
+|---------|-------------|
+| `skills export` | Export skills to agents (`--target`, `--directory`, `--list-agents`) |
+| `skills info` | Show installation status and paths |
+
+### Collaboration
+
+| Command | Description |
+|---------|-------------|
+| `skills collab init <team>` | Initialize team collaboration |
+| `skills collab share <skill>` | Share a skill with the team |
+| `skills collab sync` | Sync shared skills with team |
+| `skills lockspec generate` | Generate a team skill manifest |
+| `skills lockspec verify` | Verify installation matches lockspec |
+| `skills grid serve` | P2P skill sharing on local network |
+
+### Automation & Rules
+
+| Command | Description |
+|---------|-------------|
+| `skills rule add <name>` | Add an always-on coding rule (`--description`, `--global`) |
+| `skills rule list` | List all coding rules |
+| `skills trigger add <name>` | Auto-trigger skills on events (`--event`, `--pattern`, `--action`) |
+| `skills watch [dir]` | Auto-sync skills to agents on file changes |
+| `skills ci` | Generate CI/CD workflow for skill validation |
+
+### Session & Planning
+
+| Command | Description |
+|---------|-------------|
+| `skills recall save <key> <value>` | Store context across sessions |
+| `skills recall search <query>` | Search stored memory entries |
+| `skills track save <name>` | Save current session state |
+| `skills blueprint create <name>` | Create structured development plan with milestones |
+| `skills method apply <name>` | Apply a development methodology pack |
+| `skills insight` | Analyze installed skills — patterns, coverage, and gaps |
 
 ### Quality Scoring
 
@@ -237,15 +289,15 @@ skills submit-repo vercel-labs/agent-skills   # Skills appear on marketplace
 | **Cursor** | `.cursor/skills/` | `~/.cursor/skills/` |
 | **Claude Code** | `.claude/skills/` | `~/.claude/skills/` |
 | **GitHub Copilot** | `.github/skills/` | `~/.github/skills/` |
-| **OpenAI Codex** | `.codex/skills/` | `~/.codex/skills/` |
+| **Codex** | `.codex/skills/` | `~/.codex/skills/` |
 | **Windsurf** | `.windsurf/skills/` | `~/.codeium/windsurf/skills/` |
 | **Cline** | `.cline/skills/` | `~/.cline/skills/` |
 | **Gemini CLI** | `.gemini/skills/` | `~/.gemini/skills/` |
-| **Zed** | `.zed/skills/` | `~/.config/zed/skills/` |
+| **Zed** | `.zed/skills/` | `~/.zed/skills/` |
 | **Antigravity** | `.agent/skills/` | `~/.gemini/antigravity/skills/` |
 | **OpenCode** | `.opencode/skill/` | `~/.config/opencode/skill/` |
 
-**+32 more agents:** Amp, Kilo, Roo, Goose, CodeBuddy, Continue, Crush, Clawdbot, Droid, Kiro, MCPJam, Mux, OpenHands, Pi, Qoder, Qwen Code, Trae, Zencoder, Neovate, Command Code, Ara, Aide, Alex, BB, CodeStory, Helix AI, Meekia, Pear AI, Adal, Pochi, Sourcegraph Cody, Void AI
+**+35 more agents:** Amp, Kilo, Roo, Goose, CodeBuddy, Continue, Crush, Clawdbot, Droid, Kiro, MCPJam, Mux, OpenHands, Pi, Qoder, Qwen Code, Trae, Zencoder, Neovate, Command Code, Ara, Aide, Alex, BB, CodeStory, Helix AI, Meekia, Pear AI, Adal, Pochi, Sourcegraph Cody, Void AI, Lingma, Deep Agents, Ruler
 
 ---
 
@@ -270,13 +322,13 @@ Create a `.skillsrc` or `.skillsrc.json` file in your project root or home direc
     }
   ],
   "defaults": {
-    "agent": "cursor",
+    "agents": ["cursor", "claude"],
     "global": false
   }
 }
 ```
 
-Config is loaded from: project `.skillsrc` → home `~/.skillsrc` (first found wins).
+Config is loaded from: project `.skillsrc` / `.skillsrc.json` → home `~/.skillsrc` / `~/.skillsrc.json` (first found wins). Both `"agent": "cursor"` (singular string) and `"agents": ["cursor", "claude"]` (array) are accepted in defaults.
 
 ---
 
