@@ -1,6 +1,6 @@
 {
   "name": "@syndicats/agent-skills",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Universal CLI for managing AI agent skills across 45+ agents. Install from Git repos, npm packages, and local directories.",
   "type": "module",
   "main": "dist/index.js",

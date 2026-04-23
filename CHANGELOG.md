@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.1] - 2026-04-23
+
+### Added
+- **Code audit document** -- Full repository scan (`docs/code-audit-2026-04-23.md`) identifying 18 findings across security, type safety, error handling, testing, and code quality, each with severity rating and solution approach
+
+### Changed
+- **Dependencies updated to latest stable versions:**
+  - `typescript` ^5.5.4 → ^6.0.3
+  - `commander` ^12.1.0 → ^14.0.3
+  - `glob` ^10.4.5 → ^13.0.6
+  - `@clack/prompts` ^0.11.0 → ^1.2.0
+  - `inquirer` ^13.1.0 → ^13.4.2
+  - `ora` ^9.0.0 → ^9.4.0
+  - `yaml` ^2.4.5 → ^2.8.3
+  - `@types/node` ^20.14.0 → ^25.6.0
+  - `vitest` ^4.0.16 → ^4.1.5
+- **Node.js minimum** raised from >=18.0.0 to >=22.0.0
+- **Compile target** changed to ES2024
+- **`build:fast`** split `tsup --dts` into separate `tsc --emitDeclarationOnly` step to avoid tsup's baseUrl deprecation in TS 6.0
+
+---
+
 ## [2.0.0] - 2026-04-23
 
 ### Forked as @syndicats/agent-skills
