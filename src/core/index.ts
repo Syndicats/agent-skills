@@ -52,68 +52,11 @@ export {
     listScripts
 } from './executor.js';
 
-// Marketplace functions
+// Kept for backward compatibility — parseScopedName is used by install
 export {
-    loadConfig,
-    saveConfig,
-    addMarketplace,
-    removeMarketplace,
-    listMarketplaceSkills,
-    installSkill,
-    uninstallSkill,
-    checkUpdates,
-    searchSkills,
-    getInstalledSkills,
-    listMarketplaces
-} from './marketplace.js';
-
-// Skills Database API (our Supabase backend - primary source)
-export {
-    fetchFromDB,
-    getSkillByScoped,
-    searchSkillsDB,
-    getSkillsByAuthor,
     parseScopedName,
-    fetchSkillsForCLI,
-    searchSkillsForCLI,
     installFromGitHubUrl
 } from './skillsdb.js';
-
-export type {
-    DBSkill,
-    Asset,
-    SkillsDBResult,
-    FetchOptions,
-    MarketplaceCompatibleSkill,
-    MarketplaceFetchResult
-} from './skillsdb.js';
-
-// On-demand asset fetching
-export {
-    getSkillBaseUrl,
-    getAssetUrl,
-    parseRawUrl,
-    fetchAssetManifest,
-    listAssetsFromGitHub,
-    fetchAsset,
-    fetchAssetBinary,
-    getSkillAssets,
-    getAssetUrlFromEntry
-} from './assets.js';
-
-export type {
-    AssetEntry,
-    AssetFile
-} from './assets.js';
-
-// Telemetry (anonymous usage tracking with opt-out)
-export {
-    track,
-    trackInstall,
-    trackSearch,
-    trackCommand,
-    setVersion
-} from './telemetry.js';
 
 // Source parser (GitHub, GitLab, Bitbucket, SSH, npm, local paths, direct URLs)
 export {

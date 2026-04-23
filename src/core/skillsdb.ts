@@ -11,7 +11,7 @@ declare const __SKILLS_API_URL__: string | undefined;
 // Fallback for development (will be replaced in production build)
 const SKILLS_API = typeof __SKILLS_API_URL__ !== 'undefined'
     ? __SKILLS_API_URL__
-    : 'https://www.agentskills.in/api/skills';
+    : ''; // Marketplace API removed in this fork
 
 export interface DBSkill {
     id: string;

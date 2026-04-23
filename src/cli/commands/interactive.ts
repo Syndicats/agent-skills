@@ -9,8 +9,6 @@ import inquirer from 'inquirer';
 import {
     discoverSkills,
     loadSkill,
-    listMarketplaceSkills,
-    installSkill,
     generateSkillsPromptXML,
     generateFullSkillsContext,
 } from '../../core/index.js';
@@ -104,57 +102,17 @@ async function exportToAntigravity(skills: any[], projectDir: string, fs: any) {
 }
 
 export function registerInteractiveCommands(program: Command) {
-    // Install wizard
+    // Install wizard (legacy — points to `skills install` now)
     program
         .command('install-wizard')
         .alias('iw')
         .description('Interactive skill installation wizard (legacy)')
         .action(async () => {
-            try {
-                const spinner = ora('Fetching skills from marketplaces...').start();
-                const skills = await listMarketplaceSkills();
-                spinner.stop();
-
-                if (skills.length === 0) {
-                    console.log(chalk.yellow('No skills found in marketplaces.'));
-                    return;
-                }
-
-                const choices = skills.map(skill => ({
-                    name: `${skill.name} - ${skill.description?.slice(0, 50) || 'No description'}...`,
-                    value: skill.name,
-                    short: skill.name
-                }));
-
-                const { selectedSkills } = await inquirer.prompt([{
-                    type: 'checkbox',
-                    name: 'selectedSkills',
-                    message: 'Select skills to install (Space to select, Enter to confirm):',
-                    choices,
-                    pageSize: 15
-                }]);
-
-                if (selectedSkills.length === 0) {
-                    console.log(chalk.yellow('No skills selected.'));
-                    return;
-                }
-
-                for (const skillName of selectedSkills) {
-                    const installSpinner = ora(`Installing ${skillName}...`).start();
-                    try {
-                        await installSkill(skillName);
-                        installSpinner.succeed(`Installed: ${skillName}`);
-                    } catch (err) {
-                        installSpinner.fail(`Failed to install ${skillName}: ${err}`);
-                    }
-                }
-
-                console.log(chalk.bold.green('\n✓ Installation complete!'));
-                console.log(chalk.gray('Run "skills export" to export to your AI agent.'));
-            } catch (error) {
-                console.error(chalk.red('Error:'), error);
-                process.exit(1);
-            }
+            console.log(chalk.yellow('\nThe install-wizard is no longer available.'));
+            console.log(chalk.gray('Use the install command instead:'));
+            console.log(chalk.gray('  skills install owner/repo'));
+            console.log(chalk.gray('  skills install <git-url>'));
+            console.log('');
         });
 
     // Export interactive
@@ -208,81 +166,43 @@ export function registerInteractiveCommands(program: Command) {
             }
         });
 
-    // Setup wizard
+    // Setup wizard — export-only (marketplace install removed)
     program
         .command('setup')
-        .description('Interactive setup wizard - install skills and export to your agents')
+        .description('Interactive setup wizard - export installed skills to your agents')
         .action(async () => {
-            console.log(chalk.bold.cyan('\n🚀 Agent Skills Setup Wizard\n'));
+            console.log(chalk.bold.cyan('\nAgent Skills Setup Wizard\n'));
 
-            const { action } = await inquirer.prompt([{
-                type: 'list',
-                name: 'action',
-                message: 'What would you like to do?',
+            const { agents } = await inquirer.prompt([{
+                type: 'checkbox',
+                name: 'agents',
+                message: 'Which AI agents do you use?',
                 choices: [
-                    { name: '📦 Install skills from marketplace', value: 'install' },
-                    { name: '📤 Export installed skills to AI agents', value: 'export' },
-                    { name: '🔄 Both - Install and export', value: 'both' }
+                    { name: 'Cursor', value: 'cursor', checked: true },
+                    { name: 'Claude Code', value: 'claude', checked: true },
+                    { name: 'GitHub Copilot', value: 'copilot', checked: true },
+                    { name: 'OpenAI Codex', value: 'codex', checked: false }
                 ]
             }]);
 
-            if (action === 'install' || action === 'both') {
-                const spinner = ora('Fetching skills from marketplaces...').start();
-                const skills = await listMarketplaceSkills();
-                spinner.stop();
-
-                if (skills.length > 0) {
-                    const choices = skills.slice(0, 20).map(skill => ({
-                        name: `${skill.name} - ${skill.description?.slice(0, 40) || ''}...`,
-                        value: skill.name
-                    }));
-
-                    const { selectedSkills } = await inquirer.prompt([{
-                        type: 'checkbox',
-                        name: 'selectedSkills',
-                        message: 'Select skills to install:',
-                        choices,
-                        pageSize: 10
-                    }]);
-
-                    for (const skillName of selectedSkills) {
-                        const installSpinner = ora(`Installing ${skillName}...`).start();
-                        try {
-                            await installSkill(skillName);
-                            installSpinner.succeed(`Installed: ${skillName}`);
-                        } catch (err) {
-                            installSpinner.fail(`Failed: ${skillName}`);
-                        }
-                    }
-                }
+            const skills = await discoverSkills();
+            if (skills.length === 0) {
+                console.log(chalk.yellow('No skills found to export.'));
+                console.log(chalk.gray('Install skills first: skills install owner/repo'));
+                return;
             }
 
-            if (action === 'export' || action === 'both') {
-                const { agents } = await inquirer.prompt([{
-                    type: 'checkbox',
-                    name: 'agents',
-                    message: 'Which AI agents do you use?',
-                    choices: [
-                        { name: 'Cursor', value: 'cursor', checked: true },
-                        { name: 'Claude Code', value: 'claude', checked: true },
-                        { name: 'GitHub Copilot', value: 'copilot', checked: true },
-                        { name: 'OpenAI Codex', value: 'codex', checked: false }
-                    ]
-                }]);
+            const { mkdir, writeFile, appendFile } = await import('fs/promises');
+            const { join } = await import('path');
+            const { existsSync } = await import('fs');
 
-                const skills = await discoverSkills();
-                const { mkdir, writeFile, appendFile } = await import('fs/promises');
-                const { join } = await import('path');
-                const { existsSync } = await import('fs');
-
-                for (const target of agents) {
-                    const spinner = ora(`Exporting to ${target}...`).start();
-                    await exportToAgent(target, skills, '.', { mkdir, writeFile, appendFile, join, existsSync });
-                    spinner.succeed();
-                }
+            for (const target of agents) {
+                const spinner = ora(`Exporting to ${target}...`).start();
+                await exportToAgent(target, skills, '.', { mkdir, writeFile, appendFile, join, existsSync });
+                spinner.succeed();
             }
 
-            console.log(chalk.bold.green('\n✨ Setup complete!'));
+            console.log(chalk.bold.green('\nSetup complete!'));
             console.log(chalk.gray('Your skills are now ready to use in your AI agents.\n'));
         });
 
@@ -419,7 +339,7 @@ export function registerInteractiveCommands(program: Command) {
         .action(async (skillName, options) => {
             try {
                 const clean = skillName.replace(/^@/, '');
-                const url = `https://skills.karanjot.dev/marketplace/${clean}`;
+                const url = `https://github.com/${clean}`;
 
                 if (options.urlOnly) {
                     console.log(url);
@@ -500,11 +420,11 @@ export function registerInteractiveCommands(program: Command) {
         .description('Generate shell completion script (bash, zsh, fish)')
         .action((shell) => {
             const commands = [
-                'list', 'validate', 'show', 'prompt', 'init', 'assets',
-                'install', 'uninstall', 'search', 'run', 'context',
-                'preview', 'scripts', 'market-list', 'market-search',
-                'market-install', 'market-uninstall', 'market-installed',
-                'market-sources', 'setup', 'completion'
+                'list', 'validate', 'show', 'prompt', 'init',
+                'install', 'search', 'run', 'context',
+                'preview', 'scripts', 'setup', 'completion',
+                'check', 'update', 'remove', 'export', 'doctor',
+                'score', 'diff', 'compose', 'test', 'watch',
             ];
 
             if (shell === 'bash') {

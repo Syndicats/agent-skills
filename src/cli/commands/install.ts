@@ -1,8 +1,7 @@
 /**
  * `skills install` command — Install skills from various sources
- * 
+ *
  * Supports:
- * - Marketplace (by name, @scoped/name)
  * - GitHub/GitLab/Bitbucket URLs
  * - Private Git repos (SSH, HTTPS with tokens)
  * - npm packages (npm:@scope/package)
@@ -18,32 +17,18 @@ import { AGENTS, AgentConfig } from '../agents.js';
 import {
     addSkillToLock,
     createLockEntry,
-    installFromGitHubUrl,
-    getSkillByScoped,
-    fetchSkillsForCLI,
     parseSource,
     cloneWithAuth,
     sanitizeUrl,
     loadSkillsRC,
 } from '../../core/index.js';
-import { trackCommand } from '../../core/telemetry.js';
-
-/** Install a skill from its database record into a target directory */
-async function installSkillFromDatabase(skill: any, targetDir: string): Promise<string> {
-    const githubUrl = skill.github_url || skill.githubUrl;
-    if (githubUrl) {
-        const result = await installFromGitHubUrl(githubUrl, targetDir);
-        return result.path;
-    }
-    throw new Error(`No GitHub URL found for skill ${skill.name}`);
-}
 
 export function registerInstallCommand(program: Command) {
     program
         .command('install [source]')
         .alias('i')
         .alias('add')
-        .description('Install skill(s) from marketplace, GitHub URL, or local directory')
+        .description('Install skill(s) from Git repo, URL, npm, or local directory')
         .option('-g, --global', 'Install globally (user-wide)')
         .option('--local', 'Install locally (project-level), overrides .skillsrc global default')
         .option('-s, --skill <skills...>', 'Specify skill names to install')
@@ -128,7 +113,6 @@ export function registerInstallCommand(program: Command) {
                         console.log(chalk.gray('  skills install <owner/repo>      Install from GitHub'));
                         console.log(chalk.gray('  skills install <url>             Install from URL'));
                         console.log(chalk.gray('  skills install .                 Install from current directory'));
-                        console.log(chalk.gray('  skills install -s <name>         Install from marketplace by name'));
                         console.log(chalk.gray('  skills install                   Reinstall from lock file'));
                         return;
                     }
@@ -174,131 +158,12 @@ export function registerInstallCommand(program: Command) {
                     return;
                 }
 
-                // Install by marketplace name(s) using -s flag (supports glob patterns)
-                // Only use marketplace path when no source URL is provided
+                // The -s flag filters skills within a git repo (applied during clone)
+                // When used without a source, show usage
                 if (options.skill && options.skill.length > 0 && !source) {
-                    const skillNames: string[] = options.skill;
-
-                    // Helper: check if a pattern is a glob
-                    const isGlobPattern = (s: string) => s.includes('*') || s.includes('?');
-                    // Simple glob matcher (supports * and ? without external dependency)
-                    const globMatch = (pattern: string, str: string): boolean => {
-                        const regex = new RegExp(
-                            '^' + pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&')
-                                .replace(/\*/g, '.*')
-                                .replace(/\?/g, '.') + '$',
-                            'i'
-                        );
-                        return regex.test(str);
-                    };
-
-                    for (const skillName of skillNames) {
-                        const isGlob = isGlobPattern(skillName);
-
-                        if (isGlob) {
-                            // Glob: search marketplace and filter matches
-                            const baseQuery = skillName.replace(/[*?]/g, '').trim();
-                            const spinner = ora(`Searching for skills matching "${skillName}"...`).start();
-                            try {
-                                const result = await fetchSkillsForCLI({ search: baseQuery || 'a', limit: 100, sortBy: 'stars' });
-                                const matches = result.skills.filter((s: any) =>
-                                    globMatch(skillName, s.name) || globMatch(skillName, s.scopedName || '')
-                                );
-
-                                if (matches.length === 0) {
-                                    spinner.fail(`No skills matching pattern: ${skillName}`);
-                                    continue;
-                                }
-
-                                spinner.succeed(`Found ${matches.length} skill(s) matching "${skillName}"`);
-
-                                // Dry run: just list matches
-                                if (options.dryRun) {
-                                    for (const m of matches) {
-                                        console.log(chalk.cyan(`  ${(m as any).scopedName || m.name}`));
-                                    }
-                                    continue;
-                                }
-
-                                // Install all matches
-                                for (const skill of matches) {
-                                    const sSpinner = ora(`Installing ${(skill as any).scopedName || skill.name}...`).start();
-                                    try {
-                                        for (const agent of agents) {
-                                            const config = AGENTS[agent];
-                                            const targetDir = isGlobal ? config.globalDir : config.projectDir;
-                                            await installSkillFromDatabase(skill as any, targetDir);
-                                        }
-                                        const lockEntry = createLockEntry({
-                                            name: skill.name,
-                                            scopedName: (skill as any).scoped_name || (skill as any).scopedName || skill.name,
-                                            source: (skill as any).github_url || (skill as any).githubUrl || `database:${skill.name}`,
-                                            sourceType: (skill as any).github_url || (skill as any).githubUrl ? 'github' : 'database',
-                                            version: (skill as any).version,
-                                            agents,
-                                            canonicalPath: isGlobal ? AGENTS[agents[0]].globalDir : AGENTS[agents[0]].projectDir,
-                                            isGlobal,
-                                        });
-                                        await addSkillToLock(lockEntry);
-                                        sSpinner.succeed(`Installed ${(skill as any).scopedName || skill.name}`);
-                                    } catch (err: any) {
-                                        sSpinner.fail(`${(skill as any).scopedName || skill.name}: ${err.message}`);
-                                    }
-                                }
-                            } catch (err: any) {
-                                spinner.fail(`Search failed: ${err.message}`);
-                            }
-                        } else {
-                            // Exact match (existing behavior)
-                            const spinner = ora(`Searching for ${skillName}...`).start();
-                            try {
-                                let skill = await getSkillByScoped(skillName);
-
-                                if (!skill) {
-                                    const result = await fetchSkillsForCLI({ search: skillName, limit: 1, sortBy: 'stars' });
-                                    if (result.skills.length > 0) {
-                                        skill = result.skills[0] as any;
-                                    }
-                                }
-
-                                if (!skill) {
-                                    spinner.fail(`Skill not found: ${skillName}`);
-                                    continue;
-                                }
-
-                                if (options.dryRun) {
-                                    spinner.succeed(`Found: ${(skill as any).scoped_name || skill.name}`);
-                                    continue;
-                                }
-
-                                spinner.text = `Installing ${(skill as any).scoped_name || skill.name}...`;
-
-                                for (const agent of agents) {
-                                    const config = AGENTS[agent];
-                                    const targetDir = isGlobal ? config.globalDir : config.projectDir;
-                                    await installSkillFromDatabase(skill as any, targetDir);
-                                }
-
-                                const lockEntry = createLockEntry({
-                                    name: skill.name,
-                                    scopedName: (skill as any).scoped_name || skill.name,
-                                    source: (skill as any).github_url || `database:${skill.name}`,
-                                    sourceType: (skill as any).github_url ? 'github' : 'database',
-                                    version: (skill as any).version,
-                                    agents,
-                                    canonicalPath: isGlobal ? AGENTS[agents[0]].globalDir : AGENTS[agents[0]].projectDir,
-                                    isGlobal,
-                                });
-                                await addSkillToLock(lockEntry);
-
-                                spinner.succeed(`Installed ${(skill as any).scoped_name || skill.name}`);
-                            } catch (err: any) {
-                                spinner.fail(`${skillName}: ${err.message}`);
-                            }
-                        }
-                    }
-
-                    console.log('');
+                    console.log(chalk.yellow('\nThe -s/--skill flag filters skills within a repository.'));
+                    console.log(chalk.gray('  Usage: skills install owner/repo -s <skill-name>'));
+                    console.log(chalk.gray('  Usage: skills install owner/repo --skill \'pattern-*\''));
                     return;
                 }
 
@@ -345,55 +210,10 @@ export function registerInstallCommand(program: Command) {
                 // ── Parse source with the unified source parser ──
                 let parsed = parseSource(source);
 
-                // ── Handle @scoped/name — try marketplace first, fallback to GitHub ──
+                // ── Handle @owner/repo — strip @ and treat as GitHub owner/repo ──
                 if (source.startsWith('@')) {
-                    const spinner = ora(`Looking up "${source}" in marketplace...`).start();
-                    try {
-                        const skill = await getSkillByScoped(source);
-
-                        if (skill) {
-                            spinner.text = `Installing ${(skill as any).scoped_name || skill.name}...`;
-
-                            for (const agent of agents) {
-                                const config = AGENTS[agent];
-                                const targetDir = isGlobal ? config.globalDir : config.projectDir;
-                                await installSkillFromDatabase(skill as any, targetDir);
-                            }
-
-                            const lockEntry = createLockEntry({
-                                name: skill.name,
-                                scopedName: (skill as any).scoped_name || skill.name,
-                                source: (skill as any).github_url || `database:${skill.name}`,
-                                sourceType: (skill as any).github_url ? 'github' : 'database',
-                                version: (skill as any).version,
-                                agents,
-                                canonicalPath: isGlobal ? AGENTS[agents[0]].globalDir : AGENTS[agents[0]].projectDir,
-                                isGlobal,
-                            });
-                            await addSkillToLock(lockEntry);
-
-                            spinner.succeed(`Installed ${(skill as any).scoped_name || skill.name}`);
-                            console.log('');
-                            return;
-                        } else {
-                            // Not in marketplace — strip @ and try as GitHub owner/repo
-                            const withoutAt = source.slice(1);
-                            spinner.info(`Not found in marketplace, trying as GitHub repo: ${withoutAt}`);
-                            source = withoutAt;
-                            // Re-parse the source without @
-                            const reparsed = parseSource(source);
-                            Object.assign(parsed, reparsed);
-                            // Fall through to git-based install below
-                        }
-                    } catch {
-                        // Marketplace unavailable — strip @ and try as GitHub owner/repo
-                        const withoutAt = source.slice(1);
-                        spinner.info(`Marketplace unavailable, trying as GitHub repo: ${withoutAt}`);
-                        source = withoutAt;
-                        const reparsed = parseSource(source);
-                        Object.assign(parsed, reparsed);
-                        // Fall through to git-based install below
-                    }
+                    source = source.slice(1);
+                    parsed = parseSource(source);
                 }
 
                 // ── npm package: npm:@scope/package ──
@@ -486,7 +306,6 @@ export function registerInstallCommand(program: Command) {
                         await rm(tempDir, { recursive: true, force: true }).catch(() => { });
 
                         console.log(chalk.bold.green(`\n✨ Installed ${skillDirs.length} skill(s) from npm:${spec}\n`));
-                        trackCommand('install', `source=npm:${spec} count=${skillDirs.length}`);
                     } catch (err: any) {
                         packSpinner.fail(`npm error: ${err.message}`);
                         await rm(tempDir, { recursive: true, force: true }).catch(() => { });
@@ -501,52 +320,6 @@ export function registerInstallCommand(program: Command) {
                     parsed.type === 'bitbucket' ||
                     parsed.type === 'private-git'
                 ) {
-                    // For owner/repo shorthand or full GitHub URLs, also try marketplace lookup
-                    if (parsed.type === 'github' && !source.includes('://') && !source.startsWith('git@')) {
-                        // owner/repo shorthand — try marketplace first
-                        const spinner = ora(`Looking up "${source}" in marketplace...`).start();
-                        try {
-                            let skill = await getSkillByScoped(source);
-                            if (!skill) {
-                                const result = await fetchSkillsForCLI({ search: source, limit: 1, sortBy: 'stars' });
-                                if (result.skills.length > 0) {
-                                    skill = result.skills[0] as any;
-                                }
-                            }
-
-                            if (skill) {
-                                spinner.text = `Installing ${(skill as any).scoped_name || skill.name}...`;
-
-                                for (const agent of agents) {
-                                    const config = AGENTS[agent];
-                                    const targetDir = isGlobal ? config.globalDir : config.projectDir;
-                                    await installSkillFromDatabase(skill as any, targetDir);
-                                }
-
-                                const lockEntry = createLockEntry({
-                                    name: skill.name,
-                                    scopedName: (skill as any).scoped_name || skill.name,
-                                    source: (skill as any).github_url || `database:${skill.name}`,
-                                    sourceType: (skill as any).github_url ? 'github' : 'database',
-                                    version: (skill as any).version,
-                                    agents,
-                                    canonicalPath: isGlobal ? AGENTS[agents[0]].globalDir : AGENTS[agents[0]].projectDir,
-                                    isGlobal,
-                                });
-                                await addSkillToLock(lockEntry);
-
-                                spinner.succeed(`Installed ${(skill as any).scoped_name || skill.name}`);
-                                console.log('');
-                                return;
-                            }
-                            // Not found in marketplace — fall through to git clone
-                            spinner.info('Not found in marketplace, cloning repository...');
-                        } catch {
-                            // Marketplace unavailable — fall through
-                            spinner.info('Marketplace unavailable, cloning repository...');
-                        }
-                    }
-
                     // Git clone install with authentication
                     const displayUrl = sanitizeUrl(parsed.url);
                     console.log(chalk.bold(`\n📦 Installing from ${displayUrl}\n`));
@@ -729,8 +502,6 @@ export function registerInstallCommand(program: Command) {
                     await rm(tempDir, { recursive: true, force: true }).catch(() => { });
 
                     console.log(chalk.bold.green(`\n✨ Installed ${skillDirs.length} skill(s)\n`));
-
-                    trackCommand('install', `source=${sanitizeUrl(parsed.url)} count=${skillDirs.length}`);
                     return;
                 }
 

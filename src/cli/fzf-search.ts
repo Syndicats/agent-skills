@@ -6,7 +6,7 @@
 import chalk from 'chalk';
 import * as readline from 'readline';
 
-const API_URL = 'https://agentskills.in/api/skills';
+const API_URL = ''; // Marketplace API removed in this fork
 
 /**
  * Search result from API
