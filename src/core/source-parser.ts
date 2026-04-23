@@ -105,6 +105,19 @@ function parseSourceInner(input: string): ParsedSource {
         };
     }
 
+    // SSH URL with protocol: ssh://git@hostname:port/path or ssh://git@hostname/path
+    const sshProtoMatch = input.match(/^ssh:\/\/([^@]+@)?([^:/]+)(?::(\d+))?\/(.+?)(?:\.git)?$/);
+    if (sshProtoMatch) {
+        const [, , host, , path] = sshProtoMatch;
+        const parts = path.split('/');
+        return {
+            type: 'private-git',
+            url: input,
+            sshHost: host,
+            subpath: parts.length > 2 ? parts.slice(2).join('/') : undefined,
+        };
+    }
+
     // SSH URL: git@hostname:owner/repo.git or git@hostname/owner/repo.git
     const sshMatch = input.match(/^git@([^:/]+)[:/](.+?)(?:\.git)?$/);
     if (sshMatch) {

@@ -253,6 +253,12 @@ export function buildAuthenticatedUrl(url: string, token: string): string {
  * git@github.com:owner/repo.git → https://github.com/owner/repo.git
  */
 export function sshToHttps(url: string): string {
+    // ssh://git@host:port/path or ssh://git@host/path
+    const sshProtoMatch = url.match(/^ssh:\/\/(?:[^@]+@)?([^:/]+)(?::\d+)?\/(.+?)(?:\.git)?$/);
+    if (sshProtoMatch) {
+        return `https://${sshProtoMatch[1]}/${sshProtoMatch[2]}.git`;
+    }
+    // git@host:path
     const match = url.match(/^git@([^:]+):(.+?)(?:\.git)?$/);
     if (match) {
         return `https://${match[1]}/${match[2]}.git`;
@@ -303,12 +309,14 @@ export async function cloneWithAuth(
     // Build the clone URL
     let cloneUrl: string;
 
-    if (auth.method === 'ssh' || (auth.method === 'none' && url.startsWith('git@'))) {
+    const isSshUrl = url.startsWith('git@') || url.startsWith('ssh://');
+
+    if (auth.method === 'ssh' || (auth.method === 'none' && isSshUrl)) {
         // Use SSH URL directly
         cloneUrl = url;
     } else if (auth.token) {
         // Convert SSH to HTTPS if needed, then inject token
-        const httpsUrl = url.startsWith('git@') ? sshToHttps(url) : normalizeGitUrl(url);
+        const httpsUrl = isSshUrl ? sshToHttps(url) : normalizeGitUrl(url);
         cloneUrl = buildAuthenticatedUrl(httpsUrl, auth.token);
     } else {
         // No auth — try public access
