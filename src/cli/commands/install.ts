@@ -61,14 +61,21 @@ export function registerInstallCommand(program: Command) {
                 const { promisify } = await import('util');
                 const execAsync = promisify(exec);
 
-                const isGlobal = options.global || false;
+                // Load .skillsrc defaults (CLI flags take priority)
+                const skillsRC = await loadSkillsRC();
+                const isGlobal = options.global || (skillsRC?.defaults?.global ?? false);
 
-                // Determine agents
+                // Determine agents: CLI flags > .skillsrc defaults > interactive prompt
                 let agents: string[] = options.agent || [];
 
                 // --all flag: install to all agents
                 if (options.all) {
                     agents = Object.keys(AGENTS);
+                }
+
+                // Apply .skillsrc default agents if no CLI flag and no --all
+                if (agents.length === 0 && !options.all && skillsRC?.defaults?.agents?.length) {
+                    agents = skillsRC.defaults.agents.filter(a => a in AGENTS);
                 }
 
                 if (agents.length === 0) {

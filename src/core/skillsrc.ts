@@ -52,6 +52,30 @@ export interface SkillsRC {
 // ─── Config File Loading ─────────────────────────────────────────────
 
 /**
+ * Normalize parsed config to handle field name variants.
+ * Supports both "agent" (singular string from README) and "agents" (plural array).
+ */
+function normalizeConfig(raw: any): SkillsRC {
+    const config = raw as SkillsRC;
+    if (config.defaults) {
+        const defaults = config.defaults as any;
+        // Support "agent" (singular string) → convert to "agents" (plural array)
+        if (!defaults.agents && defaults.agent) {
+            const agent = defaults.agent;
+            defaults.agents = Array.isArray(agent)
+                ? agent
+                : String(agent).split(',').map((a: string) => a.trim()).filter(Boolean);
+            delete defaults.agent;
+        }
+        // Ensure agents is always an array if it's a string
+        if (typeof defaults.agents === 'string') {
+            defaults.agents = defaults.agents.split(',').map((a: string) => a.trim()).filter(Boolean);
+        }
+    }
+    return config;
+}
+
+/**
  * Try to parse a file as JSON or simple YAML-like key-value format
  */
 async function parseConfigFile(filePath: string): Promise<SkillsRC | null> {
@@ -61,12 +85,12 @@ async function parseConfigFile(filePath: string): Promise<SkillsRC | null> {
 
         // Try JSON first
         if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-            return JSON.parse(trimmed) as SkillsRC;
+            return normalizeConfig(JSON.parse(trimmed));
         }
 
         // Try JSON (sometimes files don't start with { if they have comments)
         try {
-            return JSON.parse(trimmed) as SkillsRC;
+            return normalizeConfig(JSON.parse(trimmed));
         } catch {
             // Not JSON — try simple YAML-like format
         }
@@ -132,7 +156,7 @@ function parseSimpleYaml(content: string): SkillsRC | null {
                     const k = key.trim();
                     if (k === 'global') {
                         result.defaults.global = value === 'true';
-                    } else if (k === 'agents') {
+                    } else if (k === 'agents' || k === 'agent') {
                         result.defaults.agents = value.split(',').map(a => a.trim()).filter(Boolean);
                     }
                 }

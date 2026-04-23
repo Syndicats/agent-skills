@@ -5,7 +5,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import inquirer from 'inquirer';
-import { fetchSkillsForCLI, installFromGitHubUrl, searchSkills } from '../../core/index.js';
+import { fetchSkillsForCLI, installFromGitHubUrl, searchSkills, loadSkillsRC } from '../../core/index.js';
 import { AGENTS, AgentConfig } from '../agents.js';
 import { fzfSearch } from '../fzf-search.js';
 
@@ -126,19 +126,27 @@ export function registerSearchInstallCommand(program: Command) {
                 }
 
                 if (agents.length === 0) {
-                    const agentChoices = Object.entries(AGENTS).map(([key, config]: [string, AgentConfig]) => ({
-                        name: config.displayName,
-                        value: key,
-                        checked: key === 'cursor' || key === 'claude'
-                    }));
+                    // Apply .skillsrc default agents before falling through to prompt
+                    const skillsRC = await loadSkillsRC();
+                    if (skillsRC?.defaults?.agents?.length) {
+                        agents = skillsRC.defaults.agents.filter(a => a in AGENTS);
+                    }
 
-                    const { selectedAgents } = await inquirer.prompt([{
-                        type: 'checkbox',
-                        name: 'selectedAgents',
-                        message: 'Install to which agents?',
-                        choices: agentChoices
-                    }]);
-                    agents = selectedAgents;
+                    if (agents.length === 0) {
+                        const agentChoices = Object.entries(AGENTS).map(([key, config]: [string, AgentConfig]) => ({
+                            name: config.displayName,
+                            value: key,
+                            checked: key === 'cursor' || key === 'claude'
+                        }));
+
+                        const { selectedAgents } = await inquirer.prompt([{
+                            type: 'checkbox',
+                            name: 'selectedAgents',
+                            message: 'Install to which agents?',
+                            choices: agentChoices
+                        }]);
+                        agents = selectedAgents;
+                    }
                 }
 
                 if (agents.length === 0) {

@@ -17,6 +17,7 @@ import {
     listMarketplaceSkills,
     installSkill,
     fetchSkillsForCLI,
+    loadSkillsRC,
 } from '../core/index.js';
 import { setVersion } from '../core/telemetry.js';
 import { AGENTS } from './agents.js';
@@ -81,7 +82,10 @@ async function showMainMenu() {
     console.log('');
     p.intro(chalk.bgCyan.black(' Agent Skills CLI '));
 
-    // Step 1: Select target agents
+    // Step 1: Select target agents (use .skillsrc defaults if available)
+    const skillsRC = await loadSkillsRC();
+    const defaultAgents = skillsRC?.defaults?.agents?.filter(a => a in AGENTS);
+
     const agentChoices = Object.entries(AGENTS).map(([key, config]) => ({
         label: config.displayName,
         value: key,
@@ -91,7 +95,7 @@ async function showMainMenu() {
     const agents = await p.multiselect({
         message: 'Select AI agents to install skills for:',
         options: agentChoices,
-        initialValues: ['cursor', 'claude', 'copilot', 'antigravity'],
+        initialValues: defaultAgents?.length ? defaultAgents : ['cursor', 'claude', 'copilot', 'antigravity'],
         required: true,
     });
 

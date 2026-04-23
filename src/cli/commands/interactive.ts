@@ -563,49 +563,60 @@ ${commands.map(c => `complete -c skills -f -n "__fish_use_subcommand" -a "${c}" 
                 const { existsSync } = await import('fs');
                 const { readdir } = await import('fs/promises');
 
+                const { AGENTS } = await import('../agents.js');
+
                 console.log(chalk.bold('\n📦 Skills CLI Info\n'));
 
+                // Core paths
                 const paths = [
-                    { name: 'Global skills', path: join(homedir(), '.antigravity', 'skills') },
-                    { name: 'Project skills', path: join(process.cwd(), '.antigravity', 'skills') },
-                    { name: 'Legacy skills', path: join(process.cwd(), 'skills') },
-                    { name: 'Config', path: join(homedir(), '.antigravity', 'marketplace.json') }
+                    { name: 'Skills config', path: join(homedir(), '.skills', 'marketplace.json') },
+                    { name: 'Lock file', path: join(homedir(), '.skills', 'skills.lock') },
                 ];
 
-                console.log(chalk.cyan('📁 Paths:'));
+                console.log(chalk.cyan('📁 Config:'));
                 for (const { name, path } of paths) {
                     const exists = existsSync(path);
                     const icon = exists ? chalk.green('✓') : chalk.gray('○');
                     console.log(`  ${icon} ${name}: ${chalk.gray(path)}`);
                 }
 
-                const skillsDir = join(homedir(), '.antigravity', 'skills');
-                let skillCount = 0;
-                if (existsSync(skillsDir)) {
-                    const entries = await readdir(skillsDir, { withFileTypes: true });
-                    skillCount = entries.filter(e => e.isDirectory()).length;
+                // Agent directories — project-level and global
+                console.log(chalk.cyan('\n🤖 Agent Skills (project):'));
+                let totalSkillCount = 0;
+                for (const [, config] of Object.entries(AGENTS)) {
+                    const fullPath = join(process.cwd(), config.projectDir);
+                    const exists = existsSync(fullPath);
+                    if (exists) {
+                        const entries = await readdir(fullPath, { withFileTypes: true });
+                        const count = entries.filter(e => e.isDirectory()).length;
+                        totalSkillCount += count;
+                        console.log(`  ${chalk.green('✓')} ${config.displayName}: ${chalk.gray(config.projectDir)} ${chalk.dim(`(${count} skills)`)}`);
+                    }
+                }
+                // Show a few unconfigured agents for discoverability
+                const unconfigured = Object.values(AGENTS).filter(c => !existsSync(join(process.cwd(), c.projectDir)));
+                if (unconfigured.length > 0) {
+                    const sample = unconfigured.slice(0, 3).map(c => c.displayName).join(', ');
+                    const more = unconfigured.length > 3 ? ` +${unconfigured.length - 3} more` : '';
+                    console.log(chalk.gray(`  ○ Not configured: ${sample}${more}`));
+                }
+
+                console.log(chalk.cyan('\n🌐 Agent Skills (global):'));
+                for (const [, config] of Object.entries(AGENTS)) {
+                    const exists = existsSync(config.globalDir);
+                    if (exists) {
+                        const entries = await readdir(config.globalDir, { withFileTypes: true });
+                        const count = entries.filter(e => e.isDirectory()).length;
+                        totalSkillCount += count;
+                        console.log(`  ${chalk.green('✓')} ${config.displayName}: ${chalk.gray(config.globalDir)} ${chalk.dim(`(${count} skills)`)}`);
+                    }
                 }
 
                 console.log(chalk.cyan('\n📊 Stats:'));
-                console.log(`  Installed skills: ${chalk.bold(skillCount.toString())}`);
+                console.log(`  Total installed skills: ${chalk.bold(totalSkillCount.toString())}`);
                 console.log(`  Platform: ${chalk.gray(process.platform)}`);
                 console.log(`  Node: ${chalk.gray(process.version)}`);
-
-                console.log(chalk.cyan('\n🤖 Agent Directories:'));
-                const agentDirs = [
-                    { name: 'Cursor', path: '.cursor/skills' },
-                    { name: 'Claude', path: '.claude/skills' },
-                    { name: 'Copilot', path: '.github/skills' },
-                    { name: 'Codex', path: '.codex/skills' },
-                    { name: 'Antigravity', path: '.agent/skills' }
-                ];
-
-                for (const { name, path } of agentDirs) {
-                    const fullPath = join(process.cwd(), path);
-                    const exists = existsSync(fullPath);
-                    const icon = exists ? chalk.green('✓') : chalk.gray('○');
-                    console.log(`  ${icon} ${name}: ${chalk.gray(path)}`);
-                }
+                console.log(`  Agents supported: ${chalk.gray(Object.keys(AGENTS).length.toString())}`);
 
                 console.log('');
             } catch (error) {
