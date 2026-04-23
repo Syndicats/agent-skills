@@ -6,8 +6,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "skills": "./dist/cli/index.js",
-    "agent-skills": "./dist/cli/index.js"
+    "skills": "dist/cli/index.js",
+    "agent-skills": "dist/cli/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -38,7 +38,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/syndicats/agent-skills.git"
+    "url": "git+https://github.com/syndicats/agent-skills.git"
   },
   "homepage": "https://github.com/syndicats/agent-skills",
   "engines": {
