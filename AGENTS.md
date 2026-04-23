@@ -20,6 +20,7 @@ Project-specific skills live in **`.skills/`** at the repository root. Each skil
 Current skills:
 - **`.skills/typescript-guard/`** - Enforces TypeScript type checking after code changes
 - **`.skills/doc-sync/`** - Synchronizes CLI documentation with source code definitions
+- **`.skills/npm-publish/`** - Publish @syndicats/agent-skills to npm (version bump, checks, publish)
 
 These are the canonical skill definitions for this project. They can be exported to agent-specific directories (`.claude/skills/`, `.cursor/skills/`, etc.) via `skills export`.
 
