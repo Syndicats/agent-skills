@@ -45,6 +45,7 @@ export function registerInstallCommand(program: Command) {
         .alias('add')
         .description('Install skill(s) from marketplace, GitHub URL, or local directory')
         .option('-g, --global', 'Install globally (user-wide)')
+        .option('--local', 'Install locally (project-level), overrides .skillsrc global default')
         .option('-s, --skill <skills...>', 'Specify skill names to install')
         .option('-a, --agent <agents...>', 'Specify agents to install to')
         .option('--all', 'Install to all agents')
@@ -65,7 +66,8 @@ export function registerInstallCommand(program: Command) {
 
                 // Load .skillsrc defaults (CLI flags take priority)
                 const skillsRC = await loadSkillsRC();
-                const isGlobal = options.global || (skillsRC?.defaults?.global ?? false);
+                // --local flag explicitly overrides .skillsrc global default
+                const isGlobal = options.local ? false : (options.global || (skillsRC?.defaults?.global ?? false));
 
                 // Determine agents: CLI flags > .skillsrc defaults > interactive prompt
                 let agents: string[] = options.agent || [];
