@@ -286,7 +286,7 @@ This project is a fork of [agent-skills-cli](https://github.com/Karanjot786/agen
 
 ## Links
 
-- **GitHub:** [github.com/Syndicats/agent-skills](https://github.com/Syndicats/agent-skills)
+- **GitHub:** [github.com/syndicats/agent-skills](https://github.com/syndicats/agent-skills)
 - **npm:** [npmjs.com/package/@syndicats/agent-skills](https://www.npmjs.com/package/@syndicats/agent-skills)
 - **Original project:** [github.com/Karanjot786/agent-skills-cli](https://github.com/Karanjot786/agent-skills-cli)
 

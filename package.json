@@ -38,9 +38,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Syndicats/agent-skills.git"
+    "url": "https://github.com/syndicats/agent-skills.git"
   },
-  "homepage": "https://github.com/Syndicats/agent-skills",
+  "homepage": "https://github.com/syndicats/agent-skills",
   "engines": {
     "node": ">=18.0.0"
   },

@@ -193,7 +193,7 @@ export function toSARIF(result: ScanResult): object {
                 driver: {
                     name: 'agent-skills-audit',
                     version: '1.0.0',
-                    informationUri: 'https://github.com/Syndicats/agent-skills',
+                    informationUri: 'https://github.com/syndicats/agent-skills',
                     rules: SCANNER_RULES.map(r => ({
                         id: r.id,
                         name: r.title,

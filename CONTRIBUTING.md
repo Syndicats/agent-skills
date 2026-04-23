@@ -13,7 +13,7 @@ Thank you for your interest in contributing!
 
 ```bash
 # Clone the repo
-git clone git@github.com:Syndicats/agent-skills.git
+git clone git@github.com:syndicats/agent-skills.git
 cd agent-skills
 
 # Install dependencies
@@ -52,4 +52,4 @@ skills install owner/repo --list
 
 ## Questions?
 
-Open an issue on [GitHub](https://github.com/Syndicats/agent-skills/issues).
+Open an issue on [GitHub](https://github.com/syndicats/agent-skills/issues).
