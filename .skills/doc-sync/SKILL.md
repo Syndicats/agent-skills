@@ -29,14 +29,21 @@ Also check `src/cli/index.ts` for:
 - Any commands registered inline (not from command files)
 - The `program.version()` value — compare to `package.json` version
 
-### 1c. Configuration Schema
+### 1c. Package Identity
+
+Read `package.json` and extract:
+- `name`, `version`, `description`, `author`, `repository.url`, `homepage`
+
+These must be consistent with references in README.md, CLI `program.version()`, and CHANGELOG.md.
+
+### 1d. Configuration Schema
 
 Read `src/core/skillsrc.ts` and extract:
 - The `SkillsRC` interface and nested interfaces
 - The `normalizeConfig` function logic (e.g., `agent` singular to `agents` array coercion)
 - Config file search paths from `loadSkillsRC`
 
-### 1d. Environment Variables
+### 1e. Environment Variables
 
 Grep for `process.env.` across `src/` to find all referenced environment variables and their purpose.
 
@@ -71,9 +78,8 @@ Open `README.md` and check each section for these common drift categories:
 
 ### Version Strings
 - `program.version()` in `src/cli/index.ts`
-- `setVersion()` in telemetry
 - `version` in `package.json`
-- These should all agree. Flag any mismatches.
+- These should agree. Flag any mismatches.
 
 ## Step 3: Apply Fixes
 

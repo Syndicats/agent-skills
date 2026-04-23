@@ -22,8 +22,6 @@ This release marks the fork from [Karanjot786/agent-skills-cli](https://github.c
 - **`suggest` command** -- Now shows project analysis and keywords without remote lookup
 - **`setup` wizard** -- Simplified to export-only workflow (no marketplace install)
 - **Package renamed** to `@syndicats/agent-skills`
-
-### Prior changes (included in this fork)
 - `--local` flag for project-level install override
 - `--list` option to list skills in a remote repo
 - Private SSH cloning fixes
